@@ -25,4 +25,4 @@ jobs:
 
       - name: Validate JSON and CSV files
         run: |
-          python scripts/validate_files.py
+          python scripts/scripts_validate_files.py
