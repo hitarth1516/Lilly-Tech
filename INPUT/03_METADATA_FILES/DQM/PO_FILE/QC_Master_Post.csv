@@ -1,0 +1,2386 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/FILTERED_ELIGIBLE_UNIVERSE_CALL/,filtered_eligible_universe_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from filtered_eligible_universe_call t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.kaiser_opt_flg,'Y')!='NO' or nvl(t2.access_flag,'Y')!='N' 
+or nvl(t2.ascension_flag,'Y')!='N'",NA,NA,Kaiser/ascension opt out or inaccessible HCPs are present in Call customer level inputs
+2,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/FILTERED_ELIGIBLE_UNIVERSE_VAE/,filtered_eligible_universe_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from filtered_eligible_universe_vae t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.corp_email_opt_flg,'Y')!='NO' or nvl(t2.brand_email_opt_out,'Y')!='NO' 
+or nvl(t2.kaiser_opt_flg,'Y')!='NO'",NA,NA,Kaiser/email opt out HCPs are present in VAE customer level inputs
+3,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customers/,customers_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select count(*),customer_id from customers_rheum_call
+group by customer_id having count(*)>1)a",NA,NA,Rheum Call : Duplicates in customer input file
+4,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customers/,customers_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select count(*),customer_id from customers_rheum_vae
+group by customer_id having count(*)>1)a",NA,NA,Rheum VAE : Duplicates in customer input file
+5,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customers/,customers_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select count(*),customer_id from customers_derm_call
+group by customer_id having count(*)>1)a",NA,NA,Derm Call : Duplicates in customer input file
+6,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customers/,customers_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select count(*),customer_id from customers_derm_vae
+group by customer_id having count(*)>1)a",NA,NA,Derm VAE : Duplicates in customer input file
+7,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customers/,customers_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select count(*),customer_id from customers_hyb_call
+group by customer_id having count(*)>1)a",NA,NA,Hybrid Call : Duplicates in customer input file
+8,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customers/,customers_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select count(*),customer_id from customers_hyb_vae
+group by customer_id having count(*)>1)a",NA,NA,Hybrid VAE : Duplicates in customer input file
+9,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/products/,products_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from products_rheum_call 
+where (nvl(product_name,'A')!='TALTZ_PSA' and nvl(product_id,'A')!='US_304528_DS152') and (nvl(product_name,'A')!='OLUMIANT' and nvl(product_id,'A')!='US_304547_598010')",NA,NA,Rheum Call : incorrect product details
+10,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/products/,products_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from products_rheum_vae
+where (nvl(product_name,'A')!='TALTZ_PSA' and nvl(product_id,'A')!='US_304528_DS152') and (nvl(product_name,'A')!='OLUMIANT' and nvl(product_id,'A')!='US_304547_598010')",NA,NA,Rheum VAE : incorrect product details
+11,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/products/,products_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from products_derm_call 
+where (nvl(product_name,'A')!='TALTZ_PSO' and nvl(product_id,'A')!='US_304528_DS150') and (nvl(product_name,'A')!='OLUMIANT' and nvl(product_id,'A')!='US_304547_598010')",NA,NA,Derm Call : incorrect product details
+12,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/products/,products_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from products_derm_vae
+where (nvl(product_name,'A')!='TALTZ_PSO' and nvl(product_id,'A')!='US_304528_DS150') and (nvl(product_name,'A')!='OLUMIANT' and nvl(product_id,'A')!='US_304547_598010')",NA,NA,Derm VAE : incorrect product details
+13,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/products/,products_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from products_hyb_call 
+where (nvl(product_name,'A')!='TALTZ_PSA' and nvl(product_id,'A')!='US_304528_DS152') and 
+(nvl(product_name,'A')!='TALTZ_PSO' and nvl(product_id,'A')!='US_304528_DS150') and 
+(nvl(product_name,'A')!='OLUMIANT' and nvl(product_id,'A')!='US_304547_598010')",NA,NA,Hybrid Call : incorrect product details
+14,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/products/,products_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from products_hyb_vae 
+where (nvl(product_name,'A')!='TALTZ_PSA' and nvl(product_id,'A')!='US_304528_DS152') and 
+(nvl(product_name,'A')!='TALTZ_PSO' and nvl(product_id,'A')!='US_304528_DS150') and 
+(nvl(product_name,'A')!='OLUMIANT' and nvl(product_id,'A')!='US_304547_598010')",NA,NA,Hybrid VAE : incorrect product details
+15,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from customer_geography_level_constraints_hyb_call t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.kaiser_opt_flg,'Y')!='NO' or nvl(t2.access_flag,'Y')!='N' 
+or nvl(t2.ascension_flag,'Y')!='N'",NA,NA,Hybrid Call : Kaiser/ascension opt out or inaccessible HCPs are present in customer geo level constraints
+16,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from customer_geography_level_constraints_derm_call t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.kaiser_opt_flg,'Y')!='NO' or nvl(t2.access_flag,'Y')!='N' 
+or nvl(t2.ascension_flag,'Y')!='N'",NA,NA,Derm Call : Kaiser/ascension opt out or inaccessible HCPs are present in customer geo level constraints
+17,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from customer_geography_level_constraints_rheum_call t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.kaiser_opt_flg,'Y')!='NO' or nvl(t2.access_flag,'Y')!='N' 
+or nvl(t2.ascension_flag,'Y')!='N'",NA,NA,Rheum Call : Kaiser/ascension opt out or inaccessible HCPs are present in customer geo level constraints
+18,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from customer_geography_level_constraints_hyb_vae t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.corp_email_opt_flg,'Y')!='NO' or nvl(t2.brand_email_opt_out,'Y')!='NO' 
+or nvl(t2.kaiser_opt_flg,'Y')!='NO'",NA,NA,Hyb VAE : Kaiser/email opt out HCPs are present in customer geo level constraints
+19,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from customer_geography_level_constraints_derm_vae t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.corp_email_opt_flg,'Y')!='NO' or nvl(t2.brand_email_opt_out,'Y')!='NO' 
+or nvl(t2.kaiser_opt_flg,'Y')!='NO'",NA,NA,Derm VAE : Kaiser/email opt out HCPs are present in customer geo level constraints
+20,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct t2.customer_id)
+from customer_geography_level_constraints_rheum_vae t1 
+left join common_eligible_universe t2 
+on t1.customer_id = t2.customer_id
+where nvl(t2.corp_email_opt_flg,'Y')!='NO' or nvl(t2.brand_email_opt_out,'Y')!='NO' 
+or nvl(t2.kaiser_opt_flg,'Y')!='NO'",NA,NA,Rheum VAE : Kaiser/email opt out HCPs are present in customer geo level constraints
+21,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_mapping/,customer_geography_mapping_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct trim(customer_id)||trim(geography_id) customer_geo_id from customer_geography_mapping_derm_call
+except
+select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) z",NA,NA,Derm Call : Customer geo mapping does not match with common eligible
+22,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_mapping/,customer_geography_mapping_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct trim(customer_id)||trim(geography_id) customer_geo_id from customer_geography_mapping_rheum_call
+except
+select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) z",NA,NA,Rheum Call : Customer geo mapping does not match with common eligible
+23,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_mapping/,customer_geography_mapping_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct trim(customer_id)||trim(geography_id) customer_geo_id from customer_geography_mapping_hyb_call
+except
+select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) z",NA,NA,Hyb Call : Customer geo mapping does not match with common eligible
+24,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_mapping/,customer_geography_mapping_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct trim(customer_id)||trim(geography_id) customer_geo_id from customer_geography_mapping_derm_vae
+except
+select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) z",NA,NA,Derm VAE : Customer geo mapping does not match with common eligible
+25,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_mapping/,customer_geography_mapping_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct trim(customer_id)||trim(geography_id) customer_geo_id from customer_geography_mapping_rheum_vae
+except
+select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) z",NA,NA,Rheum VAE : Customer geo mapping does not match with common eligible
+26,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_mapping/,customer_geography_mapping_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct trim(customer_id)||trim(geography_id) customer_geo_id from customer_geography_mapping_hyb_vae
+except
+select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) z",NA,NA,Hyb VAE : Customer geo mapping does not match with common eligible
+27,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/rep_alignment/,rep_alignment_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct trim(customer_id)||trim(geography_id) customer_geo_id from rep_alignment_derm_call
+	except
+	select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) x",NA,NA,Derm Call : Rep alignment customer geo mapping does not match with common eligible
+28,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/rep_alignment/,rep_alignment_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct trim(customer_id)||trim(geography_id) customer_geo_id from rep_alignment_rheum_call
+	except
+	select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) x",NA,NA,Rheum Call : Rep alignment customer geo mapping does not match with common eligible
+29,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/rep_alignment/,rep_alignment_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct trim(customer_id)||trim(geography_id) customer_geo_id from rep_alignment_hyb_call
+	except
+	select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) x",NA,NA,Hyb Call : Rep alignment customer geo mapping does not match with common eligible
+30,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/rep_alignment/,rep_alignment_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct trim(customer_id)||trim(geography_id) customer_geo_id from rep_alignment_derm_vae
+	except
+	select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) x",NA,NA,Derm VAE : Rep alignment customer geo mapping does not match with common eligible
+31,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/rep_alignment/,rep_alignment_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct trim(customer_id)||trim(geography_id) customer_geo_id from rep_alignment_rheum_vae
+	except
+	select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) x",NA,NA,Rheum VAE : Rep alignment customer geo mapping does not match with common eligible
+32,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/rep_alignment/,rep_alignment_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct trim(customer_id)||trim(geography_id) customer_geo_id from rep_alignment_hyb_vae
+	except
+	select distinct trim(customer_id)||trim(territory_id) customer_geo_id from common_eligible_universe
+) x",NA,NA,Hyb VAE : Rep alignment customer geo mapping does not match with common eligible
+33,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select case when a.geography_id = b.geography_id then 'Y' else 'N' end geo_check, count(*) from
+(
+	select distinct territory_id as geography_id from common_eligible_universe where team_name in ('DERM_1','DERM_2')
+) a left join
+(
+	select distinct geography_id from geography_level_constraints_derm_call
+) b
+on a.geography_id = b.geography_id group by
+case when a.geography_id = b.geography_id then 'Y' else 'N' end
+) z where geo_check = 'N'",NA,NA,Derm Call : List of geography IDs in geography level constraints does not match with common eligible
+34,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(*) from rep_capacity_derm_call where MAX_TPS = 0,NA,NA,Derm Call : Rep capacity has max_tps as 0
+35,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct product_id, position from customer_geography_level_constraints_derm_call where geography_id is null) x
+where product_id is not null or position is not null",NA,NA,Derm Call : Customer geo level constraints has records where geography_id is null but product_id/position is not null
+36,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/deliverychannel/,deliverychannel_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from deliverychannel_derm_call
+where nvl(delivery_channel_id,'xx') != 'CALL' or nvl(delivery_channel_name,'xx') != 'CALL'
+) x",NA,NA,Derm Call : Delivery Channel file does not have the required single record
+37,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select case when a.geo_id = b.geo_id then 'Y' else 'N' end geo_check, count(*) from
+
+(
+	select distinct upper(trim(customer_id))||upper(trim(geography_id))||upper(trim(team_name)) as geo_id from rep_alignment_derm_call
+) a
+ left join
+(
+	select distinct upper(trim(customer_id))||upper(trim(territory_id))||upper(trim(team_name)) as geo_id from common_eligible_universe 
+	where team_name in ('DERM_1','DERM_2')
+) b
+on a.geo_id = b.geo_id group by
+case when a.geo_id = b.geo_id then 'Y' else 'N' end
+) x where geo_check = 'N'",NA,NA,"Derm Call : Rep Alignment does not have same customer_id, geography_id, territory_id mapping as common eligible"
+38,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps,count(distinct customer_id) from customer_geography_level_constraints_derm_call 
+where geography_id is null group by min_tps,max_tps
+) x
+where nvl(min_tps,0) != 0 or nvl(max_tps,6) != 6",NA,NA,Derm Call : Min/max tps is incorrect in customer geo level constraints
+39,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select min_tps, count(distinct customer_id) from customer_geography_level_constraints_derm_call 
+where geography_id is not null and position is null group by min_tps
+) x
+where min_tps not in (0)",NA,NA,Derm Call : Min tps is not correct for segment constraints in customer geo level constraints
+40,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps,count(*) count_rec from
+(
+select min_tps, omni_segment,count(distinct customer_geography_level_constraints_derm_call.customer_id)  
+from customer_geography_level_constraints_derm_call left join common_eligible_universe
+on customer_geography_level_constraints_derm_call.customer_id = common_eligible_universe.customer_id
+where geography_id is not null and position is null group by min_tps, omni_segment
+)
+x group by min_tps
+) y where min_tps not in (0) or count_rec not in (5,6)",NA,NA,Derm Call : Number of segments or their min_tps is incorrect in customer geo level constraints
+41,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from
+(
+select distinct count1, count2 from
+(
+select * from
+(select position, count(distinct customer_id) count1 from 
+customer_geography_level_constraints_derm_call
+where geography_id is not null and position is not null group by position) y
+cross join
+(select count(distinct customer_id) count2 from customer_geography_level_constraints_derm_call) x
+) z
+) aa
+)bb
+where c1 !=1",NA,NA,Derm Call : List of positions is invalid or the count does not match in customer geo level constraints
+42,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id) c1, count(distinct customer_id) c2
+from customer_geography_level_constraints_derm_call 
+where geography_id is not null and position is not null group by position
+) x where c1 <= c2",NA,NA,Derm Call : Count of customers in non-null geography_id & non-null position is incorrect in customer geo level constraints
+43,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps, count(distinct customer_id)  from 
+customer_geography_level_constraints_derm_call 
+where geography_id is not null and position is not null group by max_tps
+) x
+where max_tps != 0",NA,NA,Derm Call :Max tps in non-null geography_id & non-null position is non-zero in customer geo level constraints
+44,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps,min_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_derm_call 
+where geography_id is null and position is not null group by max_tps,min_tps
+) x",NA,NA,Derm Call : There are record/s where geography_id is null and position is not null in customer geo level constraints
+45,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(customer_id) from 
+customer_geography_level_constraints_derm_call 
+where min_tps is null or max_tps is null group by min_tps, max_tps
+) x",NA,NA,Derm Call : Min/max tps contains null values in customer geo level constraints
+46,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/FILTERED_ELIGIBLE_UNIVERSE_CALL/,filtered_eligible_universe_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct product_id from filtered_eligible_universe_call
+    except
+	select distinct product_id from common_eligible_universe
+) y
+",NA,NA,Call : Filtered universe does not have all the required products
+47,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id), count(customer_id) from 
+blocking_constraints_temp_derm_call where team_name in ('DERM_1','DERM_2')
+and product_group in ('PSA')
+group by position
+) x",NA,NA,Derm Call : Contains PsA
+48,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(distinct geography_id) as no_of_zero_capacity_terrs from geography_level_constraints_derm_call where max_tps=0,NA,NA,Derm Call : Geography level constraints has max_tps as 0
+49,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max(max_tps) max_tps, sum(no_of_zero_capacity_terrs) no_of_zero_capacity_terrs, c1 from
+(
+select min_tps,max_tps, count(distinct geography_id) as no_of_zero_capacity_terrs 
+from geography_level_constraints_derm_call group by min_tps, max_tps
+)x
+cross join
+(
+select count(distinct geography_id) c1 from rep_alignment_derm_call
+) y
+group by min_tps, c1
+) z
+where min_tps!=0 or max_tps > 1000 or no_of_zero_capacity_terrs != c1",NA,NA,"Derm Call : min_tps, max_tps or count of distinct geography_id is incorrect in geo level constraints"
+50,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct geography_id) c1, count(geography_id) c2 
+from geography_level_constraints_derm_call 
+) z
+where c1!= c2",NA,NA,Derm Call : There is duplication in geography_id in geo level constraints
+51,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_derm_call
+) z
+where c1>1",NA,NA,Derm Call : Attribute level constraints has more than one record
+52,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps from attribute_level_constraints_derm_call
+) z
+where min_tps!=0 or max_tps!=6",NA,NA,Derm Call : Attribute level constraints has incorrect min_tps or max_tps
+53,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/rep_alignment/,rep_alignment_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*), customer_id||geography_id from rep_alignment_derm_call 
+group by customer_id||geography_id having count(*)>1
+) z",NA,NA,Derm Call : There is duplication in customer geo level in rep alignment
+54,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/rep_alignment/,rep_alignment_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1,c2 from
+(
+select count(distinct a.cus_geo) c1 from (select customer_id||geography_id cus_geo from rep_alignment_derm_call) a 
+inner join (select distinct customer_id||geography_id cus_geo from customer_geography_level_constraints_derm_call) b 
+on a.cus_geo = b.cus_geo
+) x
+cross join
+(
+select count(distinct customer_id||geography_id) c2 from rep_alignment_derm_call
+) y
+) z where c1!=c2",NA,NA,Derm Call : List of customer geo level in rep alignment does not match with customer geo level constraints
+55,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/rep_alignment/,rep_alignment_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(distinct a.geography_id) c1 from (select geography_id from rep_alignment_derm_call) a
+inner join (select distinct geography_id from customer_geography_level_constraints_derm_call) b 
+on a.geography_id = b.geography_id
+) x
+cross join
+(
+select count(distinct geography_id) c2 from rep_alignment_derm_call
+) y
+) z where c1!=c2",NA,NA,Derm Call : Rep alignment count of distinct geo id does not match with customer geo level constraints
+56,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_response_curves/TALTZ_PSO/,response_curve_pso_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_derm_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_derm_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_derm_call) c 
+on a.customer_id = c.customer_id 
+inner join
+(select distinct customer_id from response_curve_olu_derm_call) d
+on a.customer_id = d.customer_id 
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_derm_call
+) y
+) z where c1!=c2",NA,NA,Derm Call : Response curve customer_id count does not match with customers file
+57,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_response_curves/TALTZ_PSO/,response_curve_pso_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct c1, c2 from
+(
+select call, count(distinct customer_id) c1 from response_curve_pso_derm_call group by call
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_derm_call
+) y
+) where c1!=c2",NA,NA,Derm Call : Count of unique customer_id across tps is not same as customers file
+58,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/product_position_weightage/,product_position_weightage_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct team_name from product_position_weightage_derm_call
+) x
+where nvl(team_name,'xx') not in ('DERM_1','DERM_2')",NA,NA,Derm Call : List of teams in product position weightage is incorrect
+59,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/product_position_weightage/,product_position_weightage_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_weightage, max_weightage from product_position_weightage_derm_call 
+where min_weightage < 0 or max_weightage<0 or min_weightage > 1 or max_weightage > 1 
+) x",NA,NA,Derm Call : min_weightage or max_weightage is outside accepted range in product position weightage
+60,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/product_position_weightage/,product_position_weightage_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from product_position_weightage_derm_call 
+where min_weightage is null or max_weightage is null or 
+team_name is null or product_id is null or position is null",NA,NA,Derm Call : At least one column in product position weightage contains null values
+61,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/COMMON_ELIGIBLE_UNIVERSE,common_eligible_universe,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from common_eligible_universe
+where product_id not in ('US_304528_DS152','US_304528_DS150','US_304547_598010')",NA,NA,Common Eligible Universe has invalid product IDs
+62,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/FINAL_OUTPUT/,final_output_derm_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(a.cust_geo) as count_base_universe, count(b.cust_geo) as count_post_processing from 
+(select distinct  customer_id||territory_id as cust_geo from common_eligible_universe)a inner join 
+(select distinct  customer_id||geography_id as cust_geo from final_output_derm_call)b on a.cust_geo=b.cust_geo
+) x
+where count_base_universe != count_post_processing",NA,NA,Derm Call : Final output has different customer geo mapping than common eligible
+63,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/FINAL_OUTPUT/,final_output_derm_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct customer_id,geography_id,channel_id, product_id,nvl(call_position,'NA')) as distinct_count, 
+count(*) as total_count from final_output_derm_call
+) x
+where distinct_count != total_count",NA,NA,"Derm Call : Final output has duplication at customer, geo, channel, product, call_position level"
+64,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select sum(nvl(actual_count,0)) as total_calls from final_output_fia where channel_id=""CALL"" and eligible_for_calls=""N""",NA,NA,FIA Output has calls assigned to HCPs which are not eligible for calls
+65,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/FINAL_OUTPUT/,final_output_derm_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+ select a.customer_id||a.geography_id || a.product_id||a.channel_id as cust_geo_prod, count(a.call_position) as no_of_occurances from 
+(
+select * from final_output_derm_call where nvl(actual_count,0)>0
+)a group by a.customer_id||a.geography_id||a.product_id||a.channel_id having no_of_occurances>1
+) x",NA,NA,"Derm Call : Customer, geo, product, channel level has duplication in final output"
+66,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/FINAL_OUTPUT/,final_output_derm_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct ACCESS_FLAG, ASCENSION_FLAG,KAISER_OPT_FLG, 
+case when MAX_ACHV_FREQ > 0 then 'Y' else 'N' end as max_achv_freq_check
+from (select distinct customer_id from final_output_derm_call) final_output_derm_call 
+inner join common_eligible_universe
+on final_output_derm_call.customer_id = common_eligible_universe.customer_id
+
+) x
+where ACCESS_FLAG != 'N' or ASCENSION_FLAG != 'N' or KAISER_OPT_FLG != 'NO' or max_achv_freq_check != 'Y'",NA,NA,Derm Call : Kaiser/ascension opt out or inaccessible HCPs are present in final output
+67,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select case when a.geography_id = b.geography_id then 'Y' else 'N' end geo_check, count(*) from
+(
+	select distinct territory_id as geography_id from common_eligible_universe where team_name in ('DERM_1','DERM_2')
+) a left join
+(
+	select distinct geography_id from geography_level_constraints_derm_vae
+) b
+on a.geography_id = b.geography_id group by
+case when a.geography_id = b.geography_id then 'Y' else 'N' end
+) z where geo_check = 'N'",NA,NA,Derm VAE : List of geography IDs in geography level constraints does not match with common eligible
+68,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from rep_capacity_derm_vae where MAX_TPS = 0,NA,NA,Derm VAE : Rep capacity has max_tps as 0
+69,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/deliverychannel/,deliverychannel_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from deliverychannel_derm_vae
+where nvl(delivery_channel_id,'xx') != 'VAE' or nvl(delivery_channel_name,'xx') != 'VAE'
+) x",NA,NA,Derm VAE : Delivery Channel file does not have the required single record
+70,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select case when a.geo_id = b.geo_id then 'Y' else 'N' end geo_check, count(*) from
+
+(
+	select distinct upper(trim(customer_id))||upper(trim(geography_id))||upper(trim(team_name)) as geo_id from rep_alignment_derm_vae
+) a
+ left join
+(
+	select distinct upper(trim(customer_id))||upper(trim(territory_id))||upper(trim(team_name)) as geo_id from common_eligible_universe 
+	where team_name in ('DERM_1','DERM_2')
+) b
+on a.geo_id = b.geo_id group by
+case when a.geo_id = b.geo_id then 'Y' else 'N' end
+) x where geo_check = 'N'",NA,NA,"Derm VAE : Rep Alignment does not have same customer_id, geography_id, territory_id mapping as common eligible"
+71,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps,count(distinct customer_id)  from 
+customer_geography_level_constraints_derm_vae 
+where geography_id is null group by min_tps,max_tps
+) x",NA,NA,Derm VAE : Customer geo level constraints has records where geography_id is null
+72,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_derm_vae 
+where geography_id is not null and position is null  
+group by min_tps, max_tps
+) x where min_tps != 0 or max_tps != 4",NA,NA,Derm VAE : Customer geo level constraints has incorrect min_tps/max_tps where geography_id is not null and position is null
+73,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(distinct customer_id), count(distinct customer_id||geography_id)  
+from customer_geography_level_constraints_derm_vae group by position
+) x where nvl(position,'P1') != 'P1'",NA,NA,Derm VAE : Customer geo level constraints has incorrect positions
+74,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps,min_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_derm_vae where 
+geography_id is null and position is not null group by max_tps,min_tps
+) x ",NA,NA,Derm VAE : Customer geo level constraints has records where geography_id is null and position is not null
+75,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(customer_id) from 
+customer_geography_level_constraints_derm_vae where 
+min_tps is null or max_tps is null group by min_tps, max_tps
+) x",NA,NA,Derm VAE : Customer geo level constraints has records where min_tps/max_tps is null
+76,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from customer_geography_level_constraints_derm_vae 
+where geography_id is null and position is null",NA,NA,Derm VAE : Customer geo level constraints has records where both geography_id & position are null
+77,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/FILTERED_ELIGIBLE_UNIVERSE_VAE/,filtered_eligible_universe_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select distinct product_id from filtered_eligible_universe_vae
+    except
+	select distinct product_id from common_eligible_universe
+) y
+",NA,NA,VAE : Filtered universe does not have all the required products
+78,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id) c1, count(customer_id) c2, 
+count(distinct customer_id) c3, count(distinct customer_id||territory_id) c4
+from blocking_constraints_temp_derm_vae where team_name in ('DERM_1','DERM_2') 
+and product_group in ('PSO','PSO_OLU')
+group by position
+) x
+where c1!=c2 or c2!=c4",NA,NA,Derm VAE : Blocking constraints does not have correct customer geo mapping
+79,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_derm_vae,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id) c1, count(customer_id) c2, count(distinct customer_id) c3, 
+count(distinct customer_id||territory_id) c4
+from blocking_constraints_temp_derm_vae where team_name in ('DERM_1','DERM_2') 
+and product_group in ('PSO_OLU')
+group by position
+) x
+where c1!=c2 or c2!=c4",NA,NA,Derm VAE : Blocking constraints has PSO_OLU HCPs
+80,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id), count(customer_id), 
+count(distinct customer_id), count(distinct customer_id||territory_id)
+from blocking_constraints_temp_derm_vae where team_name in ('DERM_1','DERM_2') 
+and product_group in ('PSA')
+group by position
+) x",NA,NA,Derm VAE : Blocking constraints has PSA HCPs
+81,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(distinct geography_id) as no_of_zero_capacity_terrs from geography_level_constraints_derm_vae where max_tps=0,NA,NA,Derm VAE : Geography level constraints has max_tps as 0
+82,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from
+(
+select min_tps,max_tps, count(distinct geography_id) as no_of_zero_capacity_terrs 
+from geography_level_constraints_derm_vae group by min_tps, max_tps
+)x
+cross join
+(
+select count(distinct geography_id) c1 from rep_alignment_derm_vae
+) y
+) z
+where min_tps!=0 or max_tps > 1000 or no_of_zero_capacity_terrs != c1",NA,NA,"Derm VAE : min_tps, max_tps or count of distinct geography_id is incorrect in geo level constraints"
+83,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct geography_id) c1, count(geography_id) c2 
+from geography_level_constraints_derm_vae
+) z
+where c1!= c2",NA,NA,Derm VAE : There is duplication in geography_id in geo level constraints
+84,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_derm_vae
+) z
+where c1!=3",NA,NA,Derm VAE : Attribute level constraints has more than three records (1 HCP Level & 2 HCP Brand Level)
+85,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps from attribute_level_constraints_derm_vae where product_id is null and position is null
+) z
+where min_tps!=0 or max_tps!=4",NA,NA,Derm VAE : Attribute level constraints has incorrect min_tps or max_tps
+86,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/rep_alignment/,rep_alignment_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*), customer_id||geography_id from rep_alignment_derm_vae 
+group by customer_id||geography_id having count(*)>1
+) z",NA,NA,Derm VAE : There is duplication in customer geo level in rep alignment
+87,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/rep_alignment/,rep_alignment_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1,c2 from
+(
+select count(distinct a.cus_geo) c1 from (select customer_id||geography_id cus_geo from rep_alignment_derm_vae) a 
+inner join (select distinct customer_id||geography_id cus_geo from customer_geography_level_constraints_derm_vae) b 
+on a.cus_geo = b.cus_geo
+) x
+cross join
+(
+select count(distinct customer_id||geography_id) c2 from rep_alignment_derm_vae
+) y
+) z where c1!=c2",NA,NA,Derm VAE : List of customer geo level in rep alignment does not match with customer geo level constraints
+88,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/rep_alignment/,rep_alignment_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(distinct a.geography_id) c1 from (select geography_id from rep_alignment_derm_vae) a
+inner join (select distinct geography_id from customer_geography_level_constraints_derm_vae) b 
+on a.geography_id = b.geography_id
+) x
+cross join
+(
+select count(distinct geography_id) c2 from rep_alignment_derm_vae
+) y
+) z where c1!=c2",NA,NA,Derm VAE : Rep alignment count of distinct geo id does not match with customer geo level constraints
+89,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_response_curves/TALTZ_PSO/,response_curve_pso_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_derm_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_derm_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_derm_vae) c 
+on a.customer_id = c.customer_id 
+inner join
+(select distinct customer_id from response_curve_olu_derm_vae) d
+on a.customer_id = d.customer_id 
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_derm_vae
+) y
+) z where c1!=c2",NA,NA,Derm VAE : Response curve customer_id count does not match with customers file
+90,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_response_curves/TALTZ_PSO/,response_curve_pso_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct c1, c2 from
+(
+select vae, count(distinct customer_id) c1 from response_curve_pso_derm_vae group by vae
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_derm_vae
+) y
+) where c1!=c2",NA,NA,Derm VAE : Count of unique customer_id across tps is not same as customers file
+91,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/product_position_weightage/,product_position_weightage_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct team_name from product_position_weightage_derm_vae
+) x
+where nvl(team_name,'xx') not in ('DERM_1','DERM_2')",NA,NA,Derm VAE : List of teams in product position weightage is incorrect
+92,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/product_position_weightage/,product_position_weightage_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_weightage, max_weightage from product_position_weightage_derm_vae 
+where min_weightage < 0 or max_weightage<0 or min_weightage > 1 or max_weightage > 1 
+) x",NA,NA,Derm VAE : min_weightage or max_weightage is outside accepted range in product position weightage
+93,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/product_position_weightage/,product_position_weightage_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from product_position_weightage_derm_vae 
+where min_weightage is null or max_weightage is null or 
+team_name is null or product_id is null or position is null",NA,NA,Derm VAE : At least one column in product position weightage contains null values
+94,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/product_position_weightage/,product_position_weightage_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct position from product_position_weightage_derm_vae
+) x
+where nvl(position,'xx') != 'P1'",NA,NA,Derm VAE : Product position weightage has invalid positions
+95,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/FINAL_OUTPUT/,final_output_derm_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(a.cust_geo) as count_base_universe, count(b.cust_geo) as count_post_processing from 
+(select distinct  customer_id||territory_id as cust_geo from common_eligible_universe)a inner join 
+(select distinct  customer_id||geography_id as cust_geo from final_output_derm_vae)b on a.cust_geo=b.cust_geo
+) x
+where count_base_universe != count_post_processing",NA,NA,Derm VAE : Final output has different customer geo mapping than common eligible
+96,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/FINAL_OUTPUT/,final_output_derm_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct customer_id,geography_id,channel_id, product_id,nvl(call_position,'NA')) as distinct_count, 
+count(*) as total_count from final_output_derm_vae
+) x
+where distinct_count != total_count",NA,NA,"Derm VAE : Final output has duplication at customer, geo, channel, product, VAE_position level"
+97,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select sum(nvl(actual_count,0)) as total_vaes from final_output_fia where channel_id=""VAE"" and eligible_for_vaes=""N""",NA,NA,FIA Output has VAEs assigned to HCPs which are not eligible for VAEs
+98,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/FINAL_OUTPUT/,final_output_derm_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+ select a.customer_id||a.geography_id || a.product_id||a.channel_id as cust_geo_prod, count(a.call_position) as no_of_occurances from 
+(
+select * from final_output_derm_vae where nvl(actual_count,0)>0
+)a group by a.customer_id||a.geography_id||a.product_id||a.channel_id having no_of_occurances>1
+) x",NA,NA,"Derm VAE : Customer, geo, product, channel level has duplication in final output"
+99,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/FINAL_OUTPUT/,final_output_derm_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct corp_email_opt_flg, kaiser_opt_flg, brand_email_opt_out 
+from common_eligible_universe c
+inner join (
+select distinct customer_id from final_output_derm_vae ) op 
+on c.customer_id = op.customer_id
+) x
+where corp_email_opt_flg != 'NO' or kaiser_opt_flg != 'NO' or brand_email_opt_out != 'NO'",NA,NA,Derm VAE : Kaiser/Email opt out or inaccessible HCPs are present in final output
+100,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select case when a.geography_id = b.geography_id then 'Y' else 'N' end geo_check, count(*) from
+(
+	select distinct territory_id as geography_id from common_eligible_universe where team_name in ('RHEUM_1','RHEUM_2')
+) a left join
+(
+	select distinct geography_id from geography_level_constraints_rheum_call
+) b
+on a.geography_id = b.geography_id group by
+case when a.geography_id = b.geography_id then 'Y' else 'N' end
+) z where geo_check = 'N'",NA,NA,Rheum Call : List of geography IDs in geography level constraints does not match with common eligible
+101,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(*) from rep_capacity_rheum_call where MAX_TPS = 0,NA,NA,Rheum Call : Rep capacity has max_tps as 0
+102,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct product_id, position from customer_geography_level_constraints_rheum_call where geography_id is null) x
+where product_id is not null or position is not null",NA,NA,Rheum Call : Customer geo level constraints has records where geography_id is null but product_id/position is not null
+103,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/deliverychannel/,deliverychannel_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from deliverychannel_rheum_call
+where nvl(delivery_channel_id,'xx') != 'CALL' or nvl(delivery_channel_name,'xx') != 'CALL'
+) x",NA,NA,Rheum Call : Delivery Channel file does not have the required single record
+104,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select case when a.geo_id = b.geo_id then 'Y' else 'N' end geo_check, count(*) from
+
+(
+	select distinct upper(trim(customer_id))||upper(trim(geography_id))||upper(trim(team_name)) as geo_id from rep_alignment_rheum_call
+) a
+ left join
+(
+	select distinct upper(trim(customer_id))||upper(trim(territory_id))||upper(trim(team_name)) as geo_id from common_eligible_universe 
+	where team_name in ('RHEUM_1','RHEUM_2')
+) b
+on a.geo_id = b.geo_id group by
+case when a.geo_id = b.geo_id then 'Y' else 'N' end
+) x where geo_check = 'N'",NA,NA,"Rheum Call : Rep Alignment does not have same customer_id, geography_id, territory_id mapping as common eligible"
+105,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps,count(distinct customer_id) from customer_geography_level_constraints_rheum_call 
+where geography_id is null group by min_tps,max_tps
+) x
+where nvl(min_tps,0) != 0 or nvl(max_tps,6) != 6",NA,NA,Rheum Call : Min/max tps is incorrect in customer geo level constraints
+106,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select min_tps, count(distinct customer_id) from customer_geography_level_constraints_rheum_call 
+where geography_id is not null and position is null group by min_tps
+) x
+where min_tps != 0",NA,NA,Rheum Call : Min tps is not correct for segment constraints in customer geo level constraints
+107,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps,count(*) count_rec from
+(
+select min_tps, omni_segment,count(distinct customer_geography_level_constraints_rheum_call.customer_id)  
+from customer_geography_level_constraints_rheum_call left join common_eligible_universe
+on customer_geography_level_constraints_rheum_call.customer_id = common_eligible_universe.customer_id
+where geography_id is not null and position is null group by min_tps, omni_segment
+)
+x group by min_tps
+) y where min_tps not in (0) or count_rec not in (5,6)",NA,NA,Rheum Call : Number of segments or their min_tps is incorrect in customer geo level constraints
+108,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from
+(select position, count(distinct customer_id) count1 from 
+customer_geography_level_constraints_rheum_call
+where geography_id is not null and position is not null group by position) y
+cross join
+(select count(distinct customer_id) count2 from customer_geography_level_constraints_rheum_call) x
+) z where position != 'P1' or count1 != count2",NA,NA,Rheum Call : List of positions is invalid or the count does not match in customer geo level constraints
+109,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id) c1, count(distinct customer_id) c2
+from customer_geography_level_constraints_rheum_call 
+where geography_id is not null and position is not null group by position
+) x where c1 <= c2",NA,NA,Rheum Call : Count of customers in non-null geography_id & non-null position is incorrect in customer geo level constraints
+110,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps, count(distinct customer_id)  from 
+customer_geography_level_constraints_rheum_call 
+where geography_id is not null and position is not null group by max_tps
+) x
+where max_tps != 0",NA,NA,Rheum Call :Max tps in non-null geography_id & non-null position is non-zero in customer geo level constraints
+111,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps,min_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_rheum_call 
+where geography_id is null and position is not null group by max_tps,min_tps
+) x",NA,NA,Rheum Call : There are record/s where geography_id is null and position is not null in customer geo level constraints
+112,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(customer_id) from 
+customer_geography_level_constraints_rheum_call 
+where min_tps is null or max_tps is null group by min_tps, max_tps
+) x",NA,NA,Rheum Call : Min/max tps contains null values in customer geo level constraints
+113,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, product_group, count(distinct customer_id||territory_id) c1, 
+count(customer_id) c2 from 
+blocking_constraints_temp_rheum_call where team_name in ('RHEUM_1','RHEUM_2') 
+and product_group in ('PSA')
+group by position, product_group
+) x
+where product_group in ('PSA') and c1!=c2",NA,NA,Rheum Call : Blocking constraints does not have correct customer geo mapping
+114,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2, c3, c4, c5, c6 from
+(select position, count(distinct customer_id||territory_id) c1, count(distinct customer_id) c2, 
+count(distinct territory_id)  c3
+from blocking_constraints_temp_rheum_call where team_name in ('RHEUM_1','RHEUM_2')
+group by position
+) x
+cross join
+(select count(distinct customer_id||geography_id) c4 from customer_geography_level_constraints_rheum_call) a
+cross join
+(select count(distinct customer_id) c5 from customers_rheum_call) b
+cross join
+(select count(distinct geography_id) c6 from geography_level_constraints_rheum_call) c
+) y
+where c1!=c4 or c2!=c5 or c3!=c6",NA,NA,Rheum Call : Blocking constraints has duplication in customer geo mapping or customers or geographies
+115,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id), count(customer_id) from 
+blocking_constraints_temp_rheum_call where team_name in ('RHEUM_1','RHEUM_2')
+and product_group in ('PSO','PSO_OLU')
+group by position
+) x",NA,NA,Rheum Call : Contains PsO
+116,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(distinct geography_id) as no_of_zero_capacity_terrs from geography_level_constraints_rheum_call where max_tps=0,NA,NA,Rheum Call : Geography level constraints has max_tps as 0
+117,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max(max_tps) max_tps, sum(no_of_zero_capacity_terrs) no_of_zero_capacity_terrs, c1 from
+(
+select min_tps,max_tps, count(distinct geography_id) as no_of_zero_capacity_terrs 
+from geography_level_constraints_rheum_call group by min_tps, max_tps
+)x
+cross join
+(
+select count(distinct geography_id) c1 from rep_alignment_rheum_call
+) y
+group by min_tps, c1
+) z
+where min_tps!=0 or max_tps > 1000 or no_of_zero_capacity_terrs != c1",NA,NA,"Rheum Call : min_tps, max_tps or count of distinct geography_id is incorrect in geo level constraints"
+118,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_rheum_call
+) z
+where c1>1",NA,NA,Rheum Call : Attribute level constraints has more than one record
+119,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_rheum_call
+) z
+where c1>5",NA,NA,Rheum Call : Attribute level constraints has more than one record
+120,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps from attribute_level_constraints_rheum_call
+) z
+where min_tps!=0 or max_tps!=6",NA,NA,Rheum Call : Attribute level constraints has incorrect min_tps or max_tps
+121,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/rep_alignment/,rep_alignment_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*), customer_id||geography_id from rep_alignment_rheum_call 
+group by customer_id||geography_id having count(*)>1
+) z",NA,NA,Rheum Call : There is duplication in customer geo level in rep alignment
+122,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/rep_alignment/,rep_alignment_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1,c2 from
+(
+select count(distinct a.cus_geo) c1 from (select customer_id||geography_id cus_geo from rep_alignment_rheum_call) a 
+inner join (select distinct customer_id||geography_id cus_geo from customer_geography_level_constraints_rheum_call) b 
+on a.cus_geo = b.cus_geo
+) x
+cross join
+(
+select count(distinct customer_id||geography_id) c2 from rep_alignment_rheum_call
+) y
+) z where c1!=c2",NA,NA,Rheum Call : List of customer geo level in rep alignment does not match with customer geo level constraints
+123,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_psa_rheum_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_rheum_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_rheum_call) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_rheum_call) d
+on a.customer_id = d.customer_id 
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_rheum_call
+) y
+) z where c1!=c2",NA,NA,Rheum Call : Response curve customer_id count does not match with customers file
+124,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_psa_rheum_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_rheum_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_rheum_call) c 
+on a.customer_id = c.customer_id 
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_rheum_call
+) y
+) z where c1!=c2",NA,NA,Rheum Call : Response curve customer_id count does not match with customers file
+125,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct c1, c2 from
+(
+select call, count(distinct customer_id) c1 from response_curve_psa_rheum_call group by call
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_rheum_call
+) y
+) where c1!=c2",NA,NA,Rheum Call : Count of unique customer_id across tps is not same as customers file
+126,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/product_position_weightage/,product_position_weightage_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct team_name from product_position_weightage_rheum_call
+) x
+where nvl(team_name,'xx') not in ('RHEUM_1','RHEUM_2')",NA,NA,Rheum Call : List of teams in product position weightage is incorrect
+127,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/product_position_weightage/,product_position_weightage_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_weightage, max_weightage from product_position_weightage_rheum_call 
+where min_weightage < 0 or max_weightage<0 or min_weightage > 1 or max_weightage > 1 
+) x",NA,NA,Rheum Call : min_weightage or max_weightage is outside accepted range in product position weightage
+128,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/product_position_weightage/,product_position_weightage_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from product_position_weightage_rheum_call 
+where min_weightage is null or max_weightage is null or 
+team_name is null or product_id is null or position is null",NA,NA,Rheum Call : At least one column in product position weightage contains null values
+129,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/FINAL_OUTPUT/,final_output_rheum_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(a.cust_geo) as count_base_universe, count(b.cust_geo) as count_post_processing from 
+(select distinct  customer_id||territory_id as cust_geo from common_eligible_universe)a inner join 
+(select distinct  customer_id||geography_id as cust_geo from final_output_rheum_call)b on a.cust_geo=b.cust_geo
+) x
+where count_base_universe != count_post_processing",NA,NA,Rheum Call : Final output has different customer geo mapping than common eligible
+130,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/FINAL_OUTPUT/,final_output_rheum_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct customer_id,geography_id,channel_id, product_id,nvl(call_position,'NA')) as distinct_count, 
+count(*) as total_count from final_output_rheum_call
+) x
+where distinct_count != total_count",NA,NA,"Rheum Call : Final output has duplication at customer, geo, channel, product, call_position level"
+131,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select sum(nvl(actual_count,0)) as total_calls from final_output_fia where channel_id=""CALL"" and eligible_for_calls=""N""",NA,NA,FIA Output has calls assigned to HCPs which are not eligible for calls
+132,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/FINAL_OUTPUT/,final_output_rheum_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+ select a.customer_id||a.geography_id || a.product_id||a.channel_id as cust_geo_prod, count(a.call_position) as no_of_occurances from 
+(
+select * from final_output_rheum_call where nvl(actual_count,0)>0
+)a group by a.customer_id||a.geography_id||a.product_id||a.channel_id having no_of_occurances>1
+) x",NA,NA,"Rheum Call : Customer, geo, product, channel level has duplication in final output"
+133,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/FINAL_OUTPUT/,final_output_rheum_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct ACCESS_FLAG, ASCENSION_FLAG,KAISER_OPT_FLG, 
+case when MAX_ACHV_FREQ > 0 then 'Y' else 'N' end as max_achv_freq_check
+from (select distinct customer_id from final_output_rheum_call) final_output_rheum_call 
+inner join common_eligible_universe
+on final_output_rheum_call.customer_id = common_eligible_universe.customer_id
+
+) x
+where ACCESS_FLAG != 'N' or ASCENSION_FLAG != 'N' or KAISER_OPT_FLG != 'NO' or max_achv_freq_check != 'Y'",NA,NA,Rheum Call : Kaiser/ascension opt out or inaccessible HCPs are present in final output
+134,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select case when a.geography_id = b.geography_id then 'Y' else 'N' end geo_check, count(*) from
+(
+	select distinct territory_id as geography_id from common_eligible_universe where team_name in ('RHEUM_1','RHEUM_2')
+) a left join
+(
+	select distinct geography_id from geography_level_constraints_rheum_vae
+) b
+on a.geography_id = b.geography_id group by
+case when a.geography_id = b.geography_id then 'Y' else 'N' end
+) z where geo_check = 'N'",NA,NA,Rheum VAE : List of geography IDs in geography level constraints does not match with common eligible
+135,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from rep_capacity_rheum_vae where MAX_TPS = 0,NA,NA,Rheum VAE : Rep capacity has max_tps as 0
+136,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/deliverychannel/,deliverychannel_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from deliverychannel_rheum_vae
+where nvl(delivery_channel_id,'xx') != 'VAE' or nvl(delivery_channel_name,'xx') != 'VAE'
+) x",NA,NA,Rheum VAE : Delivery Channel file does not have the required single record
+137,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select case when a.geo_id = b.geo_id then 'Y' else 'N' end geo_check, count(*) from
+
+(
+	select distinct upper(trim(customer_id))||upper(trim(geography_id))||upper(trim(team_name)) as geo_id from rep_alignment_rheum_vae
+) a
+ left join
+(
+	select distinct upper(trim(customer_id))||upper(trim(territory_id))||upper(trim(team_name)) as geo_id from common_eligible_universe 
+	where team_name in ('RHEUM_1','RHEUM_2')
+) b
+on a.geo_id = b.geo_id group by
+case when a.geo_id = b.geo_id then 'Y' else 'N' end
+) x where geo_check = 'N'",NA,NA,"Rheum VAE : Rep Alignment does not have same customer_id, geography_id, territory_id mapping as common eligible"
+138,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps,count(distinct customer_id)  from 
+customer_geography_level_constraints_rheum_vae 
+where geography_id is null group by min_tps,max_tps
+) x",NA,NA,Rheum VAE : Customer geo level constraints has records where geography_id is null
+139,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_rheum_vae 
+where geography_id is not null and position is null  
+group by min_tps, max_tps
+) x where min_tps != 0 or max_tps != 4",NA,NA,Rheum VAE : Customer geo level constraints has incorrect min_tps/max_tps where geography_id is not null and position is null
+140,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(distinct customer_id), count(distinct customer_id||geography_id)  
+from customer_geography_level_constraints_rheum_vae group by position
+) x where nvl(position,'P1') != 'P1'",NA,NA,Rheum VAE : Customer geo level constraints has incorrect positions
+141,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps,min_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_rheum_vae where 
+geography_id is null and position is not null group by max_tps,min_tps
+) x ",NA,NA,Rheum VAE : Customer geo level constraints has records where geography_id is null and position is not null
+142,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(customer_id) from 
+customer_geography_level_constraints_rheum_vae where 
+min_tps is null or max_tps is null group by min_tps, max_tps
+) x",NA,NA,Rheum VAE : Customer geo level constraints has records where min_tps/max_tps is null
+143,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from customer_geography_level_constraints_rheum_vae 
+where geography_id is null and position is null",NA,NA,Rheum VAE : Customer geo level constraints has records where both geography_id & position are null
+144,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id) c1, count(customer_id) c2, 
+count(distinct customer_id) c3, count(distinct customer_id||territory_id) c4
+from blocking_constraints_temp_rheum_vae where team_name in ('RHEUM_1','RHEUM_2') 
+and product_group in ('PSA')
+group by position
+) x
+where c1!=c2",NA,NA,Rheum VAE : Blocking constraints does not have correct customer geo mapping
+145,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id), count(customer_id), 
+count(distinct customer_id), count(distinct customer_id||territory_id)
+from blocking_constraints_temp_rheum_vae where team_name in ('RHEUM_1','RHEUM_2') 
+and product_group in ('PSO','PSO_OLU')
+group by position
+) x",NA,NA,Rheum VAE : Blocking constraints has PSA HCPs
+146,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(distinct geography_id) as no_of_zero_capacity_terrs from geography_level_constraints_rheum_vae where max_tps=0,NA,NA,Rheum VAE : Geography level constraints has max_tps as 0
+147,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_rheum_vae
+) z
+where c1!=3",NA,NA,Rheum VAE : Attribute level constraints has more than one record
+148,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct geography_id) c1, count(geography_id) c2 
+from geography_level_constraints_rheum_vae
+) z
+where c1!= c2",NA,NA,Rheum VAE : There is duplication in geography_id in geo level constraints
+149,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_rheum_vae
+) z
+where c1>5",NA,NA,Rheum VAE : Attribute level constraints has more than one record
+150,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps from attribute_level_constraints_rheum_vae
+where product_id is null and position is null
+) z
+where min_tps!=0 or max_tps!=4",NA,NA,Rheum VAE : Attribute level constraints has incorrect min_tps or max_tps
+151,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/rep_alignment/,rep_alignment_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*), customer_id||geography_id from rep_alignment_rheum_vae 
+group by customer_id||geography_id having count(*)>1
+) z",NA,NA,Rheum VAE : There is duplication in customer geo level in rep alignment
+152,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_psa_rheum_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_rheum_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_rheum_vae) c 
+on a.customer_id = c.customer_id
+inner join 
+(select distinct customer_id from  response_curve_olu_rheum_vae) d
+on a.customer_id = d.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_rheum_vae
+) y
+) z where c1!=c2",NA,NA,Rheum VAE : Response curve customer_id count does not match with customers file
+153,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/rep_alignment/,rep_alignment_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(distinct a.geography_id) c1 from (select geography_id from rep_alignment_rheum_vae) a
+inner join (select distinct geography_id from customer_geography_level_constraints_rheum_vae) b 
+on a.geography_id = b.geography_id
+) x
+cross join
+(
+select count(distinct geography_id) c2 from rep_alignment_rheum_vae
+) y
+) z where c1!=c2",NA,NA,Rheum VAE : Rep alignment count of distinct geo id does not match with customer geo level constraints
+154,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_psa_rheum_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_rheum_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_rheum_vae) c 
+on a.customer_id = c.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_rheum_vae
+) y
+) z where c1!=c2",NA,NA,Rheum VAE : Response curve customer_id count does not match with customers file
+155,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct c1, c2 from
+(
+select vae, count(distinct customer_id) c1 from response_curve_psa_rheum_vae group by vae
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_rheum_vae
+) y
+) where c1!=c2",NA,NA,Rheum VAE : Count of unique customer_id across tps is not same as customers file
+156,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/product_position_weightage/,product_position_weightage_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct team_name from product_position_weightage_rheum_vae
+) x
+where nvl(team_name,'xx') not in ('RHEUM_1','RHEUM_2')",NA,NA,Rheum VAE : List of teams in product position weightage is incorrect
+157,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/product_position_weightage/,product_position_weightage_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_weightage, max_weightage from product_position_weightage_rheum_vae 
+where min_weightage < 0 or max_weightage<0 or min_weightage > 1 or max_weightage > 1 
+) x",NA,NA,Rheum VAE : min_weightage or max_weightage is outside accepted range in product position weightage
+158,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/product_position_weightage/,product_position_weightage_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from product_position_weightage_rheum_vae 
+where min_weightage is null or max_weightage is null or 
+team_name is null or product_id is null or position is null",NA,NA,Rheum VAE : At least one column in product position weightage contains null values
+159,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/product_position_weightage/,product_position_weightage_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct position from product_position_weightage_rheum_vae
+) x
+where nvl(position,'xx') != 'P1'",NA,NA,Rheum VAE : Product position weightage has invalid positions
+160,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/FINAL_OUTPUT/,final_output_rheum_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(a.cust_geo) as count_base_universe, count(b.cust_geo) as count_post_processing from 
+(select distinct  customer_id||territory_id as cust_geo from common_eligible_universe)a inner join 
+(select distinct  customer_id||geography_id as cust_geo from final_output_rheum_vae)b on a.cust_geo=b.cust_geo
+) x
+where count_base_universe != count_post_processing",NA,NA,Rheum VAE : Final output has different customer geo mapping than common eligible
+161,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/FINAL_OUTPUT/,final_output_rheum_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct customer_id,geography_id,channel_id, product_id,nvl(call_position,'NA')) as distinct_count, 
+count(*) as total_count from final_output_rheum_vae
+) x
+where distinct_count != total_count",NA,NA,"Rheum VAE : Final output has duplication at customer, geo, channel, product, VAE_position level"
+162,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/FINAL_OUTPUT/,final_output_rheum_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct corp_email_opt_flg, kaiser_opt_flg, brand_email_opt_out 
+from common_eligible_universe c
+inner join (
+select distinct customer_id from final_output_rheum_vae ) op 
+on c.customer_id = op.customer_id
+) x
+where corp_email_opt_flg != 'NO' or kaiser_opt_flg != 'NO' or brand_email_opt_out != 'NO'",NA,NA,Rheum VAE : Kaiser/Email opt out or inaccessible HCPs are present in final output
+163,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/FINAL_OUTPUT/,final_output_rheum_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+ select a.customer_id||a.geography_id || a.product_id||a.channel_id as cust_geo_prod, count(a.call_position) as no_of_occurances from 
+(
+select * from final_output_rheum_vae where nvl(actual_count,0)>0
+)a group by a.customer_id||a.geography_id||a.product_id||a.channel_id having no_of_occurances>1
+) x",NA,NA,"Rheum VAE : Customer, geo, product, channel level has duplication in final output"
+164,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/FINAL_OUTPUT/,final_output_rheum_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct corp_email_opt_flg, kaiser_opt_flg, brand_email_opt_out 
+from common_eligible_universe c
+inner join (
+select distinct customer_id from final_output_rheum_vae ) op 
+on c.customer_id = op.customer_id
+) x
+where corp_email_opt_flg != 'NO' or kaiser_opt_flg != 'NO' or brand_email_opt_out != 'NO'",NA,NA,Rheum VAE : Kaiser/ascension opt out or inaccessible HCPs are present in final output
+165,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select case when a.geography_id = b.geography_id then 'Y' else 'N' end geo_check, count(*) from
+(
+	select distinct territory_id as geography_id from common_eligible_universe where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+) a left join
+(
+	select distinct geography_id from geography_level_constraints_hyb_call
+) b
+on a.geography_id = b.geography_id group by
+case when a.geography_id = b.geography_id then 'Y' else 'N' end
+) z where geo_check = 'N'",NA,NA,Hyb Call : List of geography IDs in geography level constraints does not match with common eligible
+166,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_hyb_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(*) from rep_capacity_hyb_call where MAX_TPS = 0,NA,NA,Hyb Call : Rep capacity has max_tps as 0
+167,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct product_id, position from customer_geography_level_constraints_hyb_call where geography_id is null) x
+where product_id is not null or position is not null",NA,NA,Hyb Call : Customer geo level constraints has records where geography_id is null but product_id/position is not null
+168,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/deliverychannel/,deliverychannel_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from deliverychannel_hyb_call
+where nvl(delivery_channel_id,'xx') != 'CALL' or nvl(delivery_channel_name,'xx') != 'CALL'
+) x",NA,NA,Hyb Call : Delivery Channel file does not have the required single record
+169,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select case when a.geo_id = b.geo_id then 'Y' else 'N' end geo_check, count(*) from
+
+(
+	select distinct upper(trim(customer_id))||upper(trim(geography_id))||upper(trim(team_name)) as geo_id from rep_alignment_hyb_call
+) a
+ left join
+(
+	select distinct upper(trim(customer_id))||upper(trim(territory_id))||upper(trim(team_name)) as geo_id from common_eligible_universe 
+	where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+) b
+on a.geo_id = b.geo_id group by
+case when a.geo_id = b.geo_id then 'Y' else 'N' end
+) x where geo_check = 'N'",NA,NA,"Hyb Call : Rep Alignment does not have same customer_id, geography_id, territory_id mapping as common eligible"
+170,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps,count(*) count_rec from
+(
+select min_tps, omni_segment,count(distinct customer_geography_level_constraints_hyb_call.customer_id)  
+from customer_geography_level_constraints_hyb_call left join common_eligible_universe
+on customer_geography_level_constraints_hyb_call.customer_id = common_eligible_universe.customer_id
+where geography_id is not null and position is null group by min_tps, omni_segment
+)
+x group by min_tps
+) y where min_tps not in (0) or count_rec not in (5,6)",NA,NA,Hyb Call : Number of segments or their min_tps is incorrect in customer geo level constraints
+171,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select min_tps, count(distinct customer_id) from customer_geography_level_constraints_hyb_call 
+where geography_id is not null and position is null group by min_tps
+) x
+where min_tps not in (0)",NA,NA,Hyb Call : Min tps is not correct for segment constraints in customer geo level constraints
+172,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps,count(*) count_rec from
+(
+select min_tps, omni_segment,count(distinct customer_geography_level_constraints_hyb_call.customer_id)  
+from customer_geography_level_constraints_hyb_call left join common_eligible_universe
+on customer_geography_level_constraints_hyb_call.customer_id = common_eligible_universe.customer_id
+where geography_id is not null and position is null group by min_tps, omni_segment
+)
+x group by min_tps
+) y where min_tps not in (0,1,2) or count_rec not in (5,6)",NA,NA,Hyb Call : Number of segments or their min_tps is incorrect in customer geo level constraints
+173,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from
+(select position, count(distinct customer_id) count1 from 
+customer_geography_level_constraints_hyb_call
+where geography_id is not null and position is not null group by position) y
+cross join
+(select count(distinct customer_id) count2 from customer_geography_level_constraints_hyb_call) x
+) z where position not in ('P1','P2','P3') or count1 != count2",NA,NA,Hyb Call : List of positions is invalid or the count does not match in customer geo level constraints
+174,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id) c1, count(distinct customer_id) c2
+from customer_geography_level_constraints_hyb_call 
+where geography_id is not null and position is not null group by position
+) x where c1 <= c2",NA,NA,Hyb Call : Count of customers in non-null geography_id & non-null position is incorrect in customer geo level constraints
+175,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps, count(distinct customer_id)  from 
+customer_geography_level_constraints_hyb_call 
+where geography_id is not null and position is not null group by max_tps
+) x
+where max_tps != 0",NA,NA,Hyb Call :Max tps in non-null geography_id & non-null position is non-zero in customer geo level constraints
+176,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select max_tps,min_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_hyb_call 
+where geography_id is null and position is not null group by max_tps,min_tps
+) x",NA,NA,Hyb Call : There are record/s where geography_id is null and position is not null in customer geo level constraints
+177,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(customer_id) from 
+customer_geography_level_constraints_hyb_call 
+where min_tps is null or max_tps is null group by min_tps, max_tps
+) x",NA,NA,Hyb Call : Min/max tps contains null values in customer geo level constraints
+178,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct c1) c3 from
+(
+select position, count(distinct customer_id||territory_id) c1, 
+count(customer_id) c2 from 
+blocking_constraints_temp_hyb_call where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2') 
+group by position
+) x
+)y
+where c3 !=1",NA,NA,Hyb Call : Blocking constraints does not have correct customer geo mapping
+179,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2, c3, c4, c5, c6 from
+(select position, count(distinct customer_id||territory_id) c1, count(distinct customer_id) c2, 
+count(distinct territory_id)  c3
+from blocking_constraints_temp_hyb_call where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+group by position
+) x
+cross join
+(select count(distinct customer_id||geography_id) c4 from customer_geography_level_constraints_hyb_call) a
+cross join
+(select count(distinct customer_id) c5 from customers_hyb_call) b
+cross join
+(select count(distinct geography_id) c6 from geography_level_constraints_hyb_call) c
+) y
+where c1!=c4 or c2!=c5 or c3!=c6",NA,NA,Hyb Call : Blocking constraints has duplication in customer geo mapping or customers or geographies
+180,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_hyb_call
+) z
+where c1>1",NA,NA,Hyb Call : Attribute level constraints has more than one record
+181,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max(max_tps) max_tps, sum(no_of_zero_capacity_terrs) no_of_zero_capacity_terrs, c1 from
+(
+select min_tps,max_tps, count(distinct geography_id) as no_of_zero_capacity_terrs 
+from geography_level_constraints_hyb_call group by min_tps, max_tps
+)x
+cross join
+(
+select count(distinct geography_id) c1 from rep_alignment_hyb_call
+) y
+group by min_tps, c1
+) z
+where min_tps!=0 or max_tps > 1000 or no_of_zero_capacity_terrs != c1",NA,NA,"Hyb Call : min_tps, max_tps or count of distinct geography_id is incorrect in geo level constraints"
+182,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct geography_id) c1, count(geography_id) c2 
+from geography_level_constraints_hyb_call 
+) z
+where c1!= c2",NA,NA,Hyb Call : There is duplication in geography_id in geo level constraints
+183,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_hyb_call
+) z
+where c1>5",NA,NA,Hyb Call : Attribute level constraints has more than one record
+184,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/attribute_level_constraints/,attribute_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps from attribute_level_constraints_hyb_call
+) z
+where min_tps!=0 or max_tps!=6",NA,NA,Hyb Call : Attribute level constraints has incorrect min_tps or max_tps
+185,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_call) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_call) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_call) e
+on a.customer_id = e.customer_id
+
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_call
+) y
+) z where c1!=c2",NA,NA,Hyb Call : Response curve customer_id count does not match with customers file
+186,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/rep_alignment/,rep_alignment_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1,c2 from
+(
+select count(distinct a.cus_geo) c1 from (select customer_id||geography_id cus_geo from rep_alignment_hyb_call) a 
+inner join (select distinct customer_id||geography_id cus_geo from customer_geography_level_constraints_hyb_call) b 
+on a.cus_geo = b.cus_geo
+) x
+cross join
+(
+select count(distinct customer_id||geography_id) c2 from rep_alignment_hyb_call
+) y
+) z where c1!=c2",NA,NA,Hyb Call : List of customer geo level in rep alignment does not match with customer geo level constraints
+187,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/rep_alignment/,rep_alignment_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(distinct a.geography_id) c1 from (select geography_id from rep_alignment_hyb_call) a
+inner join (select distinct geography_id from customer_geography_level_constraints_hyb_call) b 
+on a.geography_id = b.geography_id
+) x
+cross join
+(
+select count(distinct geography_id) c2 from rep_alignment_hyb_call
+) y
+) z where c1!=c2",NA,NA,Hyb Call : Rep alignment count of distinct geo id does not match with customer geo level constraints
+188,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_call) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_call) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_call) e
+on a.customer_id = e.customer_id
+
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_call
+) y
+) z where c1!=c2",NA,NA,Hyb Call : Response curve customer_id count does not match with customers file
+189,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct c1, c2 from
+(
+select call, count(distinct customer_id) c1 from response_curve_pso_hyb_call group by call
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_call
+) y
+) where c1!=c2",NA,NA,Hyb Call : Count of unique customer_id across tps is not same as customers file
+190,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/product_position_weightage/,product_position_weightage_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct team_name from product_position_weightage_hyb_call
+) x
+where nvl(team_name,'xx') not in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')",NA,NA,Hyb Call : List of teams in product position weightage is incorrect
+191,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/product_position_weightage/,product_position_weightage_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_weightage, max_weightage from product_position_weightage_hyb_call 
+where min_weightage < 0 or max_weightage<0 or min_weightage > 1 or max_weightage > 1 
+) x",NA,NA,Hyb Call : min_weightage or max_weightage is outside accepted range in product position weightage
+192,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/product_position_weightage/,product_position_weightage_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from product_position_weightage_hyb_call 
+where min_weightage is null or max_weightage is null or 
+team_name is null or product_id is null or position is null",NA,NA,Hyb Call : At least one column in product position weightage contains null values
+193,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/FINAL_OUTPUT/,final_output_hyb_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(a.cust_geo) as count_base_universe, count(b.cust_geo) as count_post_processing from 
+(select distinct  customer_id||territory_id as cust_geo from common_eligible_universe)a inner join 
+(select distinct  customer_id||geography_id as cust_geo from final_output_hyb_call)b on a.cust_geo=b.cust_geo
+) x
+where count_base_universe != count_post_processing",NA,NA,Hyb Call : Final output has different customer geo mapping than common eligible
+194,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/FINAL_OUTPUT/,final_output_hyb_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct customer_id,geography_id,channel_id, product_id,nvl(call_position,'NA')) as distinct_count, 
+count(*) as total_count from final_output_hyb_call
+) x
+where distinct_count != total_count",NA,NA,"Hyb Call : Final output has duplication at customer, geo, channel, product, call_position level"
+195,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select sum(nvl(actual_count,0)) as total_calls from final_output_fia where channel_id=""CALL"" and eligible_for_calls=""N""",NA,NA,FIA Output has calls assigned to HCPs which are not eligible for calls
+196,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/FINAL_OUTPUT/,final_output_hyb_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+ select a.customer_id||a.geography_id || a.product_id||a.channel_id as cust_geo_prod, count(a.call_position) as no_of_occurances from 
+(
+select * from final_output_hyb_call where nvl(actual_count,0)>0
+)a group by a.customer_id||a.geography_id||a.product_id||a.channel_id having no_of_occurances>1
+) x",NA,NA,"Hyb Call : Customer, geo, product, channel level has duplication in final output"
+197,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/FINAL_OUTPUT/,final_output_hyb_call,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct ACCESS_FLAG, ASCENSION_FLAG,KAISER_OPT_FLG, 
+case when MAX_ACHV_FREQ > 0 then 'Y' else 'N' end as max_achv_freq_check
+from (select distinct customer_id from final_output_hyb_call) final_output_hyb_call 
+inner join common_eligible_universe
+on final_output_hyb_call.customer_id = common_eligible_universe.customer_id
+
+) x
+where ACCESS_FLAG != 'N' or ASCENSION_FLAG != 'N' or KAISER_OPT_FLG != 'NO' or max_achv_freq_check != 'Y'",NA,NA,Hyb Call : Kaiser/ascension opt out or inaccessible HCPs are present in final output
+198,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select case when a.geography_id = b.geography_id then 'Y' else 'N' end geo_check, count(*) from
+(
+	select distinct territory_id as geography_id from common_eligible_universe where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+) a left join
+(
+	select distinct geography_id from geography_level_constraints_hyb_vae
+) b
+on a.geography_id = b.geography_id group by
+case when a.geography_id = b.geography_id then 'Y' else 'N' end
+) z where geo_check = 'N'",NA,NA,Hyb VAE : List of geography IDs in geography level constraints does not match with common eligible
+199,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from rep_capacity_hyb_vae where MAX_TPS = 0,NA,NA,Hyb VAE : Rep capacity has max_tps as 0
+200,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/deliverychannel/,deliverychannel_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from deliverychannel_hyb_vae
+where nvl(delivery_channel_id,'xx') != 'VAE' or nvl(delivery_channel_name,'xx') != 'VAE'
+) x",NA,NA,Hyb VAE : Delivery Channel file does not have the required single record
+201,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select case when a.geo_id = b.geo_id then 'Y' else 'N' end geo_check, count(*) from
+
+(
+	select distinct upper(trim(customer_id))||upper(trim(geography_id))||upper(trim(team_name)) as geo_id from rep_alignment_hyb_vae
+) a
+ left join
+(
+	select distinct upper(trim(customer_id))||upper(trim(territory_id))||upper(trim(team_name)) as geo_id from common_eligible_universe 
+	where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+) b
+on a.geo_id = b.geo_id group by
+case when a.geo_id = b.geo_id then 'Y' else 'N' end
+) x where geo_check = 'N'",NA,NA,"Hyb VAE : Rep Alignment does not have same customer_id, geography_id, territory_id mapping as common eligible"
+202,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps,count(distinct customer_id)  from 
+customer_geography_level_constraints_hyb_vae 
+where geography_id is null group by min_tps,max_tps
+) x",NA,NA,Hyb VAE : Customer geo level constraints has records where geography_id is null
+203,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps, count(distinct customer_id) from 
+customer_geography_level_constraints_hyb_vae 
+where geography_id is not null and position is null  
+group by min_tps, max_tps
+) x where min_tps != 0 or max_tps != 4",NA,NA,Hyb VAE : Customer geo level constraints has incorrect min_tps/max_tps where geography_id is not null and position is null
+204,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(distinct customer_id), count(distinct customer_id||geography_id)  
+from customer_geography_level_constraints_hyb_vae group by position
+) x where nvl(position,'P1') != 'P1'",NA,NA,Hyb VAE : Customer geo level constraints has incorrect positions
+205,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id) c1, count(customer_id) c2, 
+count(distinct customer_id) c3, count(distinct customer_id||territory_id) c4
+from blocking_constraints_temp_hyb_vae where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+and product_group in ('OLU_NON_COLLOC','PSA','OLU_COLLOC','PSO')
+group by position
+) x
+where c1!=c2",NA,NA,Hyb VAE : Blocking constraints does not have correct customer geo mapping
+206,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id) c1, count(customer_id) c2, 
+count(distinct customer_id) c3, count(distinct customer_id||territory_id) c4
+from blocking_constraints_temp_hyb_vae where team_name in  ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2') 
+and product_group in ('PSO_OLU')
+group by position
+) x
+where c1!=c2",NA,NA,Hyb VAE : Blocking constraints has PSA HCPs
+207,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from customer_geography_level_constraints_hyb_vae 
+where geography_id is null and position is null",NA,NA,Hyb VAE : Customer geo level constraints has records where both geography_id & position are null
+208,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/BLOCKING_CONSTRAINTS_TEMP/,blocking_constraints_temp_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select position, count(customer_id||territory_id) c1, count(customer_id) c2, 
+count(distinct customer_id) c3, count(distinct customer_id||territory_id) c4
+from blocking_constraints_temp_hyb_vae where team_name in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')
+and product_group in ('OLU_NON_COLLOC','PSA','OLU_COLLOC','PSO')
+group by position
+) x
+where c1!=c2 or c2!=(3*c4)",NA,NA,Hyb VAE : Blocking constraints does not have correct customer geo mapping
+209,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_hyb_vae
+) z
+where c1>4",NA,NA,Hyb VAE : Attribute level constraints has more than one record
+210,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(distinct geography_id) as no_of_zero_capacity_terrs from geography_level_constraints_hyb_vae where max_tps=0,NA,NA,Hyb VAE : Geography level constraints has max_tps as 0
+211,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select * from
+(
+select min_tps,max_tps, count(distinct geography_id) as no_of_zero_capacity_terrs 
+from geography_level_constraints_hyb_vae group by min_tps, max_tps
+)x
+cross join
+(
+select count(distinct geography_id) c1 from rep_alignment_hyb_vae
+) y
+) z
+where min_tps!=0 or max_tps > 1000 or no_of_zero_capacity_terrs != c1",NA,NA,"Hyb VAE : min_tps, max_tps or count of distinct geography_id is incorrect in geo level constraints"
+212,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/geography_level_constraints/,geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct geography_id) c1, count(geography_id) c2 
+from geography_level_constraints_hyb_vae
+) z
+where c1!= c2",NA,NA,Hyb VAE : There is duplication in geography_id in geo level constraints
+213,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from attribute_level_constraints_hyb_vae
+) z
+where c1>5",NA,NA,Hyb VAE : Attribute level constraints has more than one record
+214,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_vae) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_vae) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_vae) e
+on a.customer_id = e.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_vae
+) y
+) z where c1!=c2",NA,NA,Hyb VAE : Response curve customer_id count does not match with customers file
+215,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/rep_alignment/,rep_alignment_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*), customer_id||geography_id from rep_alignment_hyb_vae 
+group by customer_id||geography_id having count(*)>1
+) z",NA,NA,Hyb VAE : There is duplication in customer geo level in rep alignment
+216,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/rep_alignment/,rep_alignment_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1,c2 from
+(
+select count(distinct a.cus_geo) c1 from (select customer_id||geography_id cus_geo from rep_alignment_hyb_vae) a 
+inner join (select distinct customer_id||geography_id cus_geo from customer_geography_level_constraints_hyb_vae) b 
+on a.cus_geo = b.cus_geo
+) x
+cross join
+(
+select count(distinct customer_id||geography_id) c2 from rep_alignment_hyb_vae
+) y
+) z where c1!=c2",NA,NA,Hyb VAE : List of customer geo level in rep alignment does not match with customer geo level constraints
+217,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/rep_alignment/,rep_alignment_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(distinct a.geography_id) c1 from (select geography_id from rep_alignment_hyb_vae) a
+inner join (select distinct geography_id from customer_geography_level_constraints_hyb_vae) b 
+on a.geography_id = b.geography_id
+) x
+cross join
+(
+select count(distinct geography_id) c2 from rep_alignment_hyb_vae
+) y
+) z where c1!=c2",NA,NA,Hyb VAE : Rep alignment count of distinct geo id does not match with customer geo level constraints
+218,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_vae) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_vae) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_vae) e
+on a.customer_id = e.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_vae
+) y
+) z where c1!=c2",NA,NA,Hyb VAE : Response curve customer_id count does not match with customers file
+219,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct c1, c2 from
+(
+select vae, count(distinct customer_id) c1 from response_curve_pso_hyb_vae group by vae
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_vae
+) y
+) where c1!=c2",NA,NA,Hyb VAE : Count of unique customer_id across tps is not same as customers file
+220,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/product_position_weightage/,product_position_weightage_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct team_name from product_position_weightage_hyb_vae
+) x
+where nvl(team_name,'xx') not in ('UNAD_HYB', 'BIAD_HYB1', 'BIAD_HYB2')",NA,NA,Hyb VAE : List of teams in product position weightage is incorrect
+221,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/product_position_weightage/,product_position_weightage_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_weightage, max_weightage from product_position_weightage_hyb_vae 
+where min_weightage < 0 or max_weightage<0 or min_weightage > 1 or max_weightage > 1 
+) x",NA,NA,Hyb VAE : min_weightage or max_weightage is outside accepted range in product position weightage
+222,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/product_position_weightage/,product_position_weightage_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from product_position_weightage_hyb_vae 
+where min_weightage is null or max_weightage is null or 
+team_name is null or product_id is null or position is null",NA,NA,Hyb VAE : At least one column in product position weightage contains null values
+223,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/product_position_weightage/,product_position_weightage_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct position from product_position_weightage_hyb_vae
+) x
+where nvl(position,'xx') != 'P1'",NA,NA,Hyb VAE : Product position weightage has invalid positions
+224,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/FINAL_OUTPUT/,final_output_hyb_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct corp_email_opt_flg, kaiser_opt_flg, brand_email_opt_out 
+from common_eligible_universe c
+inner join (
+select distinct customer_id from final_output_hyb_vae ) op 
+on c.customer_id = op.customer_id
+) x
+where corp_email_opt_flg != 'NO' or kaiser_opt_flg != 'NO' or brand_email_opt_out != 'NO'",NA,NA,Hyb VAE : Kaiser/Email opt out or inaccessible HCPs are present in final output
+225,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/FINAL_OUTPUT/,final_output_hyb_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct customer_id,geography_id,channel_id, product_id,nvl(call_position,'NA')) as distinct_count, 
+count(*) as total_count from final_output_hyb_vae
+) x
+where distinct_count != total_count",NA,NA,"Hyb VAE : Final output has duplication at customer, geo, channel, product, VAE_position level"
+226,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (
+select distinct max_achv_freq,nvl(total_count,0) as t_count from common_eligible_universe  c left join (
+select geography_id,customer_id ,sum(actual_count) as total_count 
+from final_output_fia
+where call_position = 'P1' and channel_id = 'CALL'
+group by  geography_id,customer_id ) z
+on c.customer_id = z.customer_id
+) call 
+where max_achv_freq-t_count < 0",NA,NA,FIA Output has records where total call count is greater than max achievable
+227,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select customer_id,geography_id,channel_id, sum(actual_count) as total_count from final_output_fia
+where  call_position = 'P1' group by customer_id,geography_id,channel_id ) p1
+left join
+(select customer_id,geography_id,channel_id, sum(actual_count) as total_count from final_output_fia
+where  call_position = 'P2' group by customer_id,geography_id,channel_id) p2
+on p1.customer_id = p2.customer_id and p1.geography_id = p2.geography_id and p1.channel_id = p2.channel_id 
+where p1.total_count < p2.total_count
+",NA,NA,FIA Output has records where P1 count is less than P2 count or P1 count is less than P3 count
+228,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/FINAL_OUTPUT/,final_output_hyb_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(
+select distinct corp_email_opt_flg, kaiser_opt_flg, brand_email_opt_out 
+from common_eligible_universe c
+inner join (
+select distinct customer_id from final_output_hyb_vae ) op 
+on c.customer_id = op.customer_id
+) x
+where corp_email_opt_flg != 'NO' or kaiser_opt_flg != 'NO' or brand_email_opt_out != 'NO'",NA,NA,Hyb VAE : Kaiser/ascension opt out or inaccessible HCPs are present in final output
+229,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct channel_id,total_count from (
+select team_name, channel_id,customer_id ,sum(actual_count) as total_count 
+from final_output_fia
+where call_position = 'P1' and actual_count > 0
+group by team_name, channel_id,customer_id )a
+where (total_count > 6 and channel_id = 'CALL') or (total_count > 4 and channel_id = 'VAE')
+) x",NA,NA,FIA Output has total count > 6 for call or total count > 4 for VAE at HCP-Team grain
+230,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (
+select distinct max_achv_freq,nvl(total_count,0) as t_count from common_eligible_universe  c left join (
+select team,channel_id,geography_id,customer_id ,sum(actual_count) as total_count 
+from (select *, case when team_name in ('DERM_1','DERM_2')then 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2')then 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB')then 'HYB'
+END AS team from
+final_output_fia ) b
+where call_position = 'P1' and channel_id = 'CALL'
+group by  team,channel_id,geography_id,customer_id ) z
+on c.customer_id = z.customer_id
+) call 
+where max_achv_freq-t_count < 0",NA,NA,FIA Output has records where total call count is greater than max achievable
+231,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select customer_id,geography_id,channel_id, sum(actual_count) as total_count from final_output_fia
+where  call_position = 'P1' group by customer_id,geography_id,channel_id ) p1
+left join
+(select customer_id,geography_id,channel_id, sum(actual_count) as total_count from final_output_fia
+where  call_position = 'P2' group by customer_id,geography_id,channel_id) p2
+on p1.customer_id = p2.customer_id and p1.geography_id = p2.geography_id and p1.channel_id = p2.channel_id 
+left join
+(select customer_id,geography_id,channel_id, sum(actual_count) as total_count from final_output_fia
+where call_position = 'P3' group by customer_id,geography_id,channel_id) p3
+on p1.customer_id = p3.customer_id and p1.geography_id = p3.geography_id and p1.channel_id = p3.channel_id 
+where p1.total_count < p2.total_count or p1.total_count < p3.total_count
+",NA,NA,FIA Output has records where P1 count is less than P2 count or P1 count is less than P3 count
+232,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct total_count from (
+select team,channel_id,geography_id,customer_id ,sum(actual_count) as total_count 
+from (select *, case when team_name in ('DERM_1','DERM_2')then 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2')then 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB')then 'HYB'
+END AS team from
+final_output_fia) b
+where call_position = 'P1' and channel_id = 'VAE'
+group by  team,channel_id,geography_id,customer_id ) vae
+) x
+where total_count not in (0,1,2,3,4)",NA,NA,FIA Output has VAE records where total count is not within 0-4
+233,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/FINAL_OUTPUT/,final_output_derm_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct(call_position) from final_output_derm_vae where channel_id=""VAE"" and call_position is not null
+) x where call_position != 'P1'",NA,NA,Derm VAE : Final output has positions other than P1
+234,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select p.channel_id, p.team_name, p.product_id, (p.total_count/t.total_count)*100 as call_portion from 
+(select channel_id, team_name,product_id, sum(actual_count) as total_count from final_output_fia
+where call_position = 'P1' group by channel_id, team_name,product_id ) p
+left join
+(select channel_id,team_name, sum(actual_count) as total_count from final_output_fia
+where call_position = 'P1' group by channel_id,team_name) t
+on p.team_name = t.team_name and p.channel_id = t.channel_id",NA,NA,Not Applicable
+235,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/FINAL_OUTPUT/,final_output_hyb_vae,",",csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct(call_position) from final_output_hyb_vae where channel_id=""VAE"" and call_position is not null
+) x where call_position != 'P1'",NA,NA,Hyb VAE : Final output has positions other than P1
+236,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct team, channel_id, product_id, call_position from 
+(select *, case when team_name in ('DERM_1','DERM_2')then 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2')then 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB')then 'HYB'
+END AS team from
+final_output_fia ) PO_Combined
+where call_position is not null and actual_count>0
+order by team, channel_id, product_id, call_position",NA,NA,Not Applicable
+237,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team_name,channel_id, max(total_count) from (
+select team_name,channel_id,geography_id ,sum(actual_count) as total_count 
+from (select *, case when team_name in ('DERM_1','DERM_2')then 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2')then 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB')then 'HYB'
+END AS team from
+final_output_fia ) b
+where call_position = 'P1'
+group by  team_name,channel_id,geography_id 
+) a
+group by team_name,channel_id",NA,NA,Not Applicable
+238,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select p.team_name, p.product_id, (p.total_count/t.total_count)*100 as call_portion from 
+(select team_name,product_id, sum(actual_count) as total_count from final_output_fia
+where channel_id = 'CALL' and call_position = 'P1' group by team_name,product_id ) p
+left join
+(select team_name, sum(actual_count) as total_count from final_output_fia
+where channel_id = 'CALL'  and call_position = 'P1' group by team_name) t
+on p.team_name = t.team_name ",NA,NA,Not Applicable
+239,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct product_id from final_output_fia) x where product_id not in ('US_304528_DS150', 'US_304528_DS152', 'US_304547_598010')",NA,NA,FIA Output : Product ID LOV is incorrect
+240,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct total_count from (
+select team,channel_id,geography_id,customer_id ,sum(actual_count) as total_count 
+from (select *, case when team_name in ('DERM_1','DERM_2')then 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2')then 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB')then 'HYB'
+END AS team from
+final_output_fia ) b
+where call_position = 'P1' and channel_id = 'VAE'
+group by  team,channel_id,geography_id,customer_id ) vae
+) x where total_count not in (0,1,2,3,4)
+
+",NA,NA,FIA Output : Check the range of PO suggested vaes
+241,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct length(customer_id) len from final_output_fia) x where len is null or len<11,NA,NA,FIA Output : Customer ID length is incorrect or null
+242,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct channel_id from final_output_fia) x where channel_id not in ('CALL','VAE')",NA,NA,FIA Output : Channel ID LOV is incorrect
+243,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct product_id from final_output_fia) x where product_id not in ('US_304528_DS150', 'US_304528_DS152', 'US_304547_598010','US_708127_420004')",NA,NA,FIA Output : Product ID LOV is incorrect
+244,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct call_position from final_output_fia where actual_count is not null) x where call_position not in ('P1','P2','P3')",NA,NA,FIA Output : Position LOV is incorrect
+245,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct actual_count from final_output_fia where actual_count is not null) x where actual_count not in ('0','1','2','3','4','5','6')",NA,NA,FIA Output : Actual Count LOV is incorrect
+246,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from (select count(*) c1 from (select * from (select distinct territory_name from final_output_fia) x where territory_name in ('SEATTLE WA DERM1 156406','TACOMA WA DERM1 156410')) y )z where c1 != 2",NA,NA,FIA Output : Territory name LOV is incorrect
+247,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct eligible_for_calls from final_output_fia) x where eligible_for_calls not in ('Y','N')",NA,NA,FIA Output : Eligible for calls LOV is incorrect
+248,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct eligible_for_vaes from final_output_fia) x where eligible_for_vaes not in ('Y','N')",NA,NA,FIA Output : Eligible for VAEs LOV is incorrect
+249,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct sales_force_code from final_output_fia) x where sales_force_code not in ('USV4','USV5','USV6','USV7','USV8')",NA,NA,FIA Output : Salesforce code LOV is incorrect
+250,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select count(*) c1 from (select * from (select distinct territory_name from final_output_fia) x where territory_name in ('SEATTLE WA DERM1 156406','TACOMA WA DERM1 156410')) y )z where c1 != 2",NA,NA,FIA Output : Territory name LOV is incorrect
+251,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct access_flag from final_output_fia) x where access_flag not in ('Y','N') ",NA,NA,FIA Output : Access flag LOV is incorrect
+252,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct ascension_flag from final_output_fia) x where ascension_flag not in ('Y','N')",NA,NA,FIA Output : Ascension flag LOV is incorrect
+253,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct kaiser_flag from final_output_fia) x where kaiser_flag not in ('YES','NO')",NA,NA,FIA Output : Kaiser flag LOV is incorrect
+254,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct max_freq from final_output_fia) x where max_freq not in ('0','1','2','3','4','5','6')",NA,NA,FIA Output : Max freq LOV is incorrect
+255,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct lilly_brand_segment from final_output_fia) x 
+where lilly_brand_segment not in ('CRITICAL','HIGH','MEDIUM','LOW','PROSPECTS','NA')",NA,NA,FIA Output : Lilly brand segment LOV is incorrect
+256,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct response_curve_present_flag from final_output_fia) x where response_curve_present_flag not in ('Y','N')",NA,NA,FIA Output : Response Curve Present LOV is incorrect
+257,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct email_opt_flag from final_output_fia) x where email_opt_flag not in ('YES','NO')",NA,NA,FIA Output : Email opt flag LOV is incorrect
+258,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select distinct email_address_flag as email_address_Opt_out from final_output_fia) x where email_address_Opt_out not in ('YES','NO') ",NA,NA,FIA Output : Email address flag LOV is incorrect
+259,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct kaiser_flag,access_flag, ascension_flag from final_output_fia
+where eligible_for_calls = 'Y'
+) x where kaiser_flag != 'NO' or access_flag != 'N' or ascension_flag != 'N'",NA,NA,FIA Output : Contains call ineligible HCPs
+260,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct kaiser_flag,email_address_flag email_address_OPT_OUT , email_opt_flag from final_output_fia
+where eligible_for_vaes = 'Y'
+) x where kaiser_flag != 'NO' or email_address_OPT_OUT != 'NO' or email_opt_flag != 'NO'",NA,NA,FIA Output : Contains vae ineligible HCPs
+261,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct channel from rep_capacity_derm_call) x where channel != 'CALL',NA,NA,Derm Call : Rep capacity has invalid channel
+262,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct channel from rep_capacity_rheum_call) x where channel != 'CALL',NA,NA,Rheum Call : Rep capacity has invalid channel
+263,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct channel from rep_capacity_hyb_call) x where channel != 'CALL',NA,NA,Hyb Call : Rep capacity has invalid channel
+264,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct channel from rep_capacity_derm_vae) x where channel != 'VAE',NA,NA,Derm VAE : Rep capacity has invalid channel
+265,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct channel from rep_capacity_rheum_vae) x where channel != 'VAE',NA,NA,Rheum VAE : Rep capacity has invalid channel
+266,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct channel from rep_capacity_hyb_vae) x where channel != 'VAE',NA,NA,Hyb VAE : Rep capacity has invalid channel
+267,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct min_tps from rep_capacity_derm_call) x where min_tps != 0,NA,NA,Derm Call : Rep capacity has invalid min_tps
+268,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct min_tps from rep_capacity_rheum_call) x where min_tps != 0,NA,NA,Rheum Call : Rep capacity has invalid min_tps
+269,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct max_tps from rep_capacity_derm_call) x where max_tps < 0 or max_tps >110,NA,NA,Derm Call : Rep capacity has invalid max_tps
+270,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct max_tps from rep_capacity_rheum_call) x where max_tps < 0 or max_tps >110,NA,NA,Rheum Call : Rep capacity has invalid max_tps
+271,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct max_tps from rep_capacity_hyb_call) x where max_tps < 0 or max_tps >110,NA,NA,Hyb Call : Rep capacity has invalid max_tps
+272,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct max_tps from rep_capacity_derm_vae) x where max_tps < 0 or max_tps >100,NA,NA,Derm VAE : Rep capacity has invalid max_tps
+273,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct max_tps from rep_capacity_rheum_vae) x where max_tps < 0 or max_tps >100,NA,NA,Rheum VAE : Rep capacity has invalid max_tps
+274,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/REP_CAPACITY_TEMP/,rep_capacity_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from (select distinct max_tps from rep_capacity_hyb_vae) x where max_tps < 0 or max_tps >100,NA,NA,Hyb VAE : Rep capacity has invalid max_tps
+275,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from final_output_ml left join (
+select customer_id, channel_id,product_id, nvl(sum(actual_count),0) as total_count
+from final_output_fia 
+group by customer_id, channel_id,product_id ) raw
+on final_output_ml.channel_id = raw.channel_id and final_output_ml.customer_id = raw.customer_id and 
+final_output_ml.product_id = raw.product_id
+where cast(final_output_ml.total_touchpoint as int) != raw.total_count",NA,NA,FIA Output : Has different tps than ML output
+276,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_ML/,final_output_ml,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select customer_id,channel_id,product_id, count(*) from final_output_ml
+group by customer_id,channel_id,product_id
+having count(*) > 1
+) x",NA,NA,"ML Ouptut : Has duplication at customer, channel, product level"
+277,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_OUTPUT_DELIVERY/data=PO_START_DATE/,final_output_po,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select product_id, channel_id, team_name, actual_count ,count(*) c1 from final_output_fia where actual_count>0
+group by product_id, channel_id, team_name, actual_count
+) x
+left join
+(
+select product_id, channel_id, team_name, actual_count ,count(*) c2 from final_output_fia where actual_count>0
+group by product_id, channel_id, team_name, actual_count
+) y
+on x.product_id = y.product_id and x.channel_id = y.channel_id and x.team_name = y.team_name
+and x.actual_count = y.actual_count
+) z
+where c1!=c2",NA,NA,FIA Output : Doesnt match with PO Output
+278,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team_name, channel_id, product_group, call_position, product_id, sum(actual_count) as calls from
+(select a.*, b.product_group from (select * from final_output_fia) a
+left  join
+(select customer_id,team_name,product_group from common_eligible_prod_group)b
+on a.customer_id=b.customer_id and a.team_name=b.team_name)a where call_position is not NULL and actual_count>0
+group by team_name, channel_id, product_group, product_id,call_position
+order by team_name, channel_id, product_group,product_id, call_position",NA,NA,Not Applicable
+279,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/context_key=US_CONTEXT/source=entities_attributes/,hcp_segment,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct y2.target_segment olu_segment,
+y1.target_segment pso_segment
+from
+(select * from common_eligible_universe where is_olu_only = 'YES') x
+left join
+(select distinct customer_id, target_segment from hcp_segment where product_id = 'US_304528_DS150') y1
+on x.customer_id = y1.customer_id
+left join
+(select distinct customer_id, target_segment from hcp_segment where product_id = 'US_304547_598010') y2
+on x.customer_id = y2.customer_id",NA,NA,Not Applicable
+280,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team_name, channel_id, sum(metric_value) from final_output_fia
+group by team_name, channel_id order by channel_id, team_name",NA,NA,Not Applicable
+281,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select channel_id, product_id, call_position, team_name, sum(actual_count) ac from final_output_fia
+	where actual_count > 0
+	group by channel_id, product_id, call_position, team_name
+	except
+	select * from
+		(
+			select channel_id, product_id, call_position, team_name, sum(actual_count) ac from com_output_derm_call
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_rheum_call
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_hyb_call
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_derm_vae
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_rheum_vae
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_hyb_vae
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+		) x2
+) x1",NA,NA,FIA Output : Doesnt match with Combined Output
+282,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team_name, channel_id, product_group, call_position, product_id, sum(actual_count) as calls from
+(select a.*, b.product_group from (select * from final_output_fia) a
+left  join
+(select customer_id,team_name,product_group from common_eligible_prod_group)b
+on a.customer_id=b.customer_id and a.team_name=b.team_name)a where call_position is not NULL and actual_count>0
+group by team_name, channel_id, product_group, product_id,call_position
+order by team_name, channel_id, product_group,product_id, call_position",NA,NA,Not Applicable
+283,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/context_key=US_CONTEXT/source=entities_attributes/,hcp_segment,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct y2.target_segment olu_segment,
+y3.target_segment lebri_segment,
+y1.target_segment pso_segment
+from
+(select * from common_eligible_universe where is_olu_only = 'YES') x
+left join
+(select distinct customer_id, target_segment from hcp_segment where product_id = 'US_304528_DS150') y1
+on x.customer_id = y1.customer_id
+left join
+(select distinct customer_id, target_segment from hcp_segment where product_id = 'US_304547_598010') y2
+on x.customer_id = y2.customer_id
+left join
+(select distinct customer_id, target_segment from hcp_segment where product_id = 'US_708127_420004') y3
+on x.customer_id = y3.customer_id",NA,NA,Not Applicable
+284,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team_name, channel_id, sum(metric_value) from final_output_fia
+group by team_name, channel_id order by channel_id, team_name",NA,NA,Not Applicable
+285,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+	select channel_id, product_id, call_position, team_name, sum(actual_count) ac from final_output_fia
+	where actual_count > 0
+	group by channel_id, product_id, call_position, team_name
+	except
+	select * from
+		(
+			select channel_id, product_id, call_position, team_name, sum(actual_count) ac from com_output_derm_call
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_rheum_call
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_hyb_call
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_derm_vae
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_rheum_vae
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+			union all
+			select channel_id, product_id, call_position,  team_name,sum(actual_count) ac from com_output_hyb_vae
+			where actual_count > 0
+			group by channel_id, product_id, call_position, team_name
+		) x2
+) x1",NA,NA,FIA Output : Doesn't match with Combined Output
+286,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/attribute_level_constraints/,attribute_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select min_tps, max_tps from attribute_level_constraints_derm_vae
+where product_id is not null and position is not null
+) z
+where min_tps!=0 or max_tps!=2",NA,NA,Derm VAE : Attribute level constraints has incorrect min_tps or max_tps
+287,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_call) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_call) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_call) e
+on a.customer_id = e.customer_id
+inner join 
+(select distinct customer_id from response_curve_lebri_hyb_call) f
+on a.customer_id = f.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_call
+) y
+) z where c1!=c2",NA,NA,Hyb Call : Response curve customer_id count does not match with customers file
+288,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_vae) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_vae) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_vae) e
+on a.customer_id = e.customer_id
+(select distinct customer_id from response_curve_lebri_hyb_vae) f
+on a.customer_id = f.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_vae
+) y
+) z where c1!=c2",NA,NA,Hyb VAE : Response curve customer_id count does not match with customers file
+289,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_response_curves/TALTZ_PSO/,response_curve_pso_derm_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_derm_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_derm_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_derm_call) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_lebri_derm_call) d
+on a.customer_id = d.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_derm_call
+) y
+) z where c1!=c2",NA,NA,Derm Call : Response curve customer_id count does not match with customers file
+290,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_response_curves/TALTZ_PSO/,response_curve_pso_derm_vae,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_derm_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_derm_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_derm_vae) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_lebri_derm_vae) d
+on a.customer_id = d.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_derm_vae
+) y
+) z where c1!=c2",NA,NA,Derm VAE : Response curve customer_id count does not match with customers file
+291,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_call,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_call) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_call) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_call) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_call) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_call) e
+on a.customer_id = e.customer_id
+inner join 
+(select distinct customer_id from response_curve_lebri_hyb_call) f
+on a.customer_id = f.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_call
+) y
+) z where c1!=c2",NA,NA,Hyb Call : Response curve customer_id count does not match with customers file
+292,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_response_curves/TALTZ_PSA/,response_curve_psa_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select c1, c2 from
+(
+select count(*) c1 from 
+(select distinct customer_id from response_curve_pso_hyb_vae) a
+inner join 
+(select distinct customer_id from customer_geography_level_constraints_hyb_vae) b 
+on a.customer_id = b.customer_id 
+inner join 
+(select distinct customer_id from customers_hyb_vae) c 
+on a.customer_id = c.customer_id 
+inner join 
+(select distinct customer_id from response_curve_olu_hyb_vae) d
+on a.customer_id = d.customer_id
+inner join 
+(select distinct customer_id from response_curve_psa_hyb_vae) e
+on a.customer_id = e.customer_id
+(select distinct customer_id from response_curve_lebri_hyb_vae) f
+on a.customer_id = f.customer_id
+) x
+cross join
+(
+select count(distinct customer_id) c2 from customers_hyb_vae
+) y
+) z where c1!=c2",NA,NA,Hyb VAE : Response curve customer_id count does not match with customers file
+293,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct total_count from (
+select team,channel_id,geography_id,customer_id ,sum(actual_count) as total_count 
+from (select *, case when team_name in ('DERM_1','DERM_2')then 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2')then 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB')then 'HYB'
+END AS team from
+final_output_fia ) b
+where call_position = 'P1' and channel_id = 'CALL'
+group by  team,channel_id,geography_id,customer_id ) vae
+) x where total_count not in (0,1,2,3,4,5,6)
+",NA,NA,FIA Output : Check the range of PO suggested calls
+294,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team,channel_id,max(total_count) from (
+select  team,channel_id,customer_id ,sum(actual_count) as total_count 
+from 
+(select *, case when team_name in ('DERM_1','DERM_2') THEN 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2') THEN 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB') then 'HYB' end as team 
+from final_output_fia) x
+where call_position = 'P1' and actual_count > 0
+group by  team,channel_id,customer_id )a
+group by team,channel_id",NA,NA,Not Applicable
+295,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from (
+select distinct customer_id,geography_id, min_tps, max_tps from customer_geography_level_constraints_derm_call 
+where geography_id is not null and product_id is null and position is null ) cg
+left join
+(select customer_id,geography_id, sum(actual_count) as ct from final_output_fia where 
+channel_id = 'CALL' AND team_name in ('DERM_1','DERM_2') and call_position = 'P1'
+group by customer_id, geography_id) po 
+on cg.customer_id = po.customer_id and cg.geography_id = po.geography_id
+where cg.min_tps > po.ct or cg.max_tps < po.ct",NA,NA,Derm CALL : Segment level min max constraints are not mathcing the input.
+296,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,final_output_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select team,channel_id, product_id,max(total_count) from (
+select  team,channel_id,customer_id, product_id,sum(actual_count) as total_count 
+from 
+(select *, case when team_name in ('DERM_1','DERM_2') THEN 'DERM'
+when team_name in ('RHEUM_1','RHEUM_2') THEN 'RHEUM'
+when team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB') then 'HYB' end as team 
+from final_output_fia) x
+where call_position = 'P1' and actual_count > 0
+group by  team,channel_id,customer_id, product_id )a
+group by team,channel_id, product_id",NA,NA,Not Applicable
+297,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/DERM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_derm_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from (
+select distinct customer_id,geography_id, min_tps, max_tps from customer_geography_level_constraints_derm_vae 
+where geography_id is not null and product_id is null and position is null ) cg
+left join
+(select customer_id,geography_id, sum(actual_count) as ct from final_output_fia where 
+channel_id = 'VAE' AND team_name in ('DERM_1','DERM_2') and call_position = 'P1'
+group by customer_id, geography_id) po 
+on cg.customer_id = po.customer_id and cg.geography_id = po.geography_id
+where cg.min_tps > po.ct or cg.max_tps < po.ct",NA,NA,Derm VAE : Segment level min max constraints are not mathcing the input.
+298,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/PO_Post_Processing/date=PO_START_DATE/,po_fia,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT   business_unit_id as `Business Unit`,
+		 team as sleeve,
+         product_id as Brand_Indication,
+         Nvl(Max(p1_calls),0)         AS `# Suggested P1 Calls`,
+         nvl(max(p2_calls),0)         AS `# Suggested P2 Calls`,
+         nvl(max(p3_calls),0)         AS `# Suggested P3 Calls`,
+         nvl(max(recommended_vaes),0) AS `# Suggested VAEs`
+FROM     (
+                SELECT trc.business_unit_id,
+					   team,
+                       product_id,					   
+                       CASE
+                              WHEN call_position = 'P1'
+                              AND    channel_id = 'CALL' THEN details
+                       END AS `p1_calls`,
+                       CASE
+                              WHEN call_position = 'P2'
+                              AND    channel_id = 'CALL' THEN details
+                       END AS `p2_calls`,
+                       CASE
+                              WHEN call_position = 'P3'
+                              AND    channel_id = 'CALL' THEN details
+                       END AS `p3_calls`,
+                       CASE
+                              WHEN call_position = 'P1'
+                              AND    channel_id = 'VAE' THEN details
+                       END AS `recommended_vaes`
+					   FROM   (
+                                       SELECT DISTINCT channel_id,
+                                                       team,
+                                                       product_id,
+                                                       call_position,
+                                                       sales_force_code,
+                                                       sum(actual_count) OVER (partition BY channel_id,team,product_id, call_position) AS details
+                                       FROM            (
+                                                              SELECT *,
+                                                                     CASE
+                                                                            WHEN team_name IN ('BIAD_HYB1',
+                                                                                               'BIAD_HYB2',
+                                                                                               'UNAD_HYB') THEN 'DERM_RHEUM_HYBRID'
+                                                                            ELSE team_name
+                                                                     END AS team
+                                                              FROM   src) po
+                                       WHERE           call_position IS NOT NULL
+                                       ORDER BY        channel_id,
+                                                       team,
+                                                       product_id,
+                                                       call_position) x 
+							   LEFT JOIN team_resp_code TRC
+                               ON TRC.salesforce_id = x.sales_force_code
+							   AND TRIM(TRC.brand_id) = TRIM(substr(x.product_id,1,9))) y
+GROUP BY business_unit_id,
+		 team,
+         product_id
+ORDER BY business_unit_id,
+         team,
+         product_id",NA,NA,PO_Summary_1
+299,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from (
+select distinct customer_id,geography_id, min_tps, max_tps from customer_geography_level_constraints_rheum_call
+where geography_id is not null and product_id is null and position is null ) cg
+left join
+(select customer_id,geography_id, sum(actual_count) as ct from final_output_fia where 
+channel_id = 'CALL' AND team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB') and call_position = 'P1'
+group by customer_id, geography_id) po 
+on cg.customer_id = po.customer_id and cg.geography_id = po.geography_id
+where cg.min_tps > po.ct or cg.max_tps < po.ct",NA,NA,Hyb CALL : Segment level min max constraints are not mathcing the input.
+300,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/POST_PROCESSING/PO_FIA/REP_CAPACITY/date=PO_START_DATE/,rep_capacity,|,csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct t.business_unit_id, x.sleeve,`# Total Territories`,`Average Capacity Utilization % (calls)`, `Average Capacity Utilization % (vaes)`
+from (
+SELECT  sales_force_code,
+		 team as sleeve,
+         total_territory_count as `# Total Territories`,
+         max(`average capacity utilization % (calls)`) AS `Average Capacity Utilization % (calls)`,
+         max(`average capacity utilization % (vaes)`)  AS `Average Capacity Utilization % (vaes)`
+FROM     (
+         SELECT DISTINCT sales_force_code,
+						 team,
+                         total_territory_count,
+						 
+                         CASE
+							WHEN channel_id = 'CALL' THEN average_terr_capacity
+                         END AS `average capacity utilization % (calls)`,
+                         CASE
+							WHEN channel_id = 'VAE' THEN average_terr_capacity
+                         END AS `average capacity utilization % (vaes)`
+         FROM            (
+                               SELECT DISTINCT sales_force_code,
+											   channel_id,
+                                               team,
+                                               count(geography_id) OVER (partition BY channel_id, team) AS total_territory_count,
+                                               round(100 * (team_terr_capacity/total_team_capcity),2)   AS average_terr_capacity
+                               FROM            (
+                                                SELECT DISTINCT a.channel_id,
+                                                sales_force_code,
+                                                                a.team,
+                                                                a.geography_id,
+                                                                team_terr_capacity,
+                                                                sum(r.max_tps) OVER (partition BY a.channel_id,a.team) AS total_team_capcity
+                                                         FROM   (
+									SELECT DISTINCT channel_id,
+													team,
+													geography_id,
+													sales_force_code,
+													sum(actual_count) OVER (partition BY channel_id,team )	AS team_terr_capacity
+									FROM            (
+														SELECT *,
+																CASE
+																WHEN team_name IN ( 'BIAD_HYB1',
+																					'BIAD_HYB2',
+																					'UNAD_HYB') THEN 'DERM_RHEUM_HYBRID'
+																ELSE team_name
+                                                                END AS team
+                                                        FROM   po_fia ) po
+                                                                  WHERE		call_position = 'P1'
+                                                                  ORDER BY	channel_id,
+                                                                            team,
+                                                                            geography_id,
+																			sales_force_code) a
+                               
+							   LEFT JOIN src r
+                               ON	r.channel_id = a.channel_id
+                               AND   r.geography_id = a.geography_id ) y ) z) h
+GROUP BY sales_force_code,
+	     team,
+         total_territory_count
+ORDER BY sales_force_code,
+	     team,
+         total_territory_count ) x
+         left join team_resp_code t
+         on x.sales_force_code = t.salesforce_id",NA,NA,PO_Summary_2
+301,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/HYB_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_hyb_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from (
+select distinct customer_id,geography_id, min_tps, max_tps from customer_geography_level_constraints_hyb_vae
+where geography_id is not null and product_id is null and position is null ) cg
+left join
+(select customer_id,geography_id, sum(actual_count) as ct from final_output_fia where 
+channel_id = 'VAE' AND team_name in ('BIAD_HYB1','BIAD_HYB2','UNAD_HYB') and call_position = 'P1'
+group by customer_id, geography_id) po 
+on cg.customer_id = po.customer_id and cg.geography_id = po.geography_id
+where cg.min_tps > po.ct or cg.max_tps < po.ct",NA,NA,Hyb VAE : Segment level min max constraints are not mathcing the input.
+302,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_CALL/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_call,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from (
+select distinct customer_id,geography_id, min_tps, max_tps from customer_geography_level_constraints_rheum_call
+where geography_id is not null and product_id is null and position is null ) cg
+left join
+(select customer_id,geography_id, sum(actual_count) as ct from final_output_fia where 
+channel_id = 'CALL' AND team_name in ('RHEUM_1','RHEUM_2') and call_position = 'P1'
+group by customer_id, geography_id) po 
+on cg.customer_id = po.customer_id and cg.geography_id = po.geography_id
+where cg.min_tps > po.ct or cg.max_tps < po.ct",NA,NA,Rheum CALL : Segment level min max constraints are not mathcing the input.
+303,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/PO/RHEUM_VAE/InputFiles/customer_geography_level_constraints/,customer_geography_level_constraints_rheum_vae,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from (
+select distinct customer_id,geography_id, min_tps, max_tps from customer_geography_level_constraints_rheum_vae
+where geography_id is not null and product_id is null and position is null ) cg
+left join
+(select customer_id,geography_id, sum(actual_count) as ct from final_output_fia where 
+channel_id = 'VAE' AND team_name in ('RHEUM_1','RHEUM_2') and call_position = 'P1'
+group by customer_id, geography_id) po 
+on cg.customer_id = po.customer_id and cg.geography_id = po.geography_id
+where cg.min_tps > po.ct or cg.max_tps < po.ct",NA,NA,Rheum VAE : Segment level min max constraints are not mathcing the input.
+304,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,ucl,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from ucl where length(lpad(lilly_person_id,11,0)) != 11 or nvl(lilly_person_id,'xx') is null",NA,NA,UCL : Lilly Person ID has incorrect values
+305,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,ucl,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from ucl where nvl(ascension_flag,'xx') not in ('Y','N')",NA,NA,UCL : Ascenion Flag has incorrect values
+306,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,ucl,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from ucl where nvl(access_flag,'xx') not in ('Y','N')",NA,NA,UCL : Access Flag has incorrect values
+307,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,ucl,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from ucl where max_frequency like '%.%'
+or max_frequency like '%[A-Z]%' or max_frequency like '%[a-z]%'",NA,NA,UCL : Max frequency has incorrect values
+308,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,ucl,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(distinct upper(trim(ly_mjr_spclty_desc_txt))) c1,
+case when upper(trim(ly_mjr_spclty_desc_txt)) like '%RHEUMATOLOGY%' then 'RHEUM'
+when upper(trim(ly_mjr_spclty_desc_txt)) like '%DERMATOLOGY%' then 'DERM'
+end as sleeve
+from ucl
+where upper(trim(ly_mjr_spclty_desc_txt)) like '%RHEUMATOLOGY%' 
+or upper(trim(ly_mjr_spclty_desc_txt)) like '%DERMATOLOGY%'
+group by case when upper(trim(ly_mjr_spclty_desc_txt)) like '%RHEUMATOLOGY%' then 'RHEUM'
+when upper(trim(ly_mjr_spclty_desc_txt)) like '%DERMATOLOGY%' then 'DERM'
+end
+) x1
+where c1<1",NA,NA,UCL : ly_mjr_spclty_desc_txt has incorrect values
+309,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/EXCLUSION/HCP_GCCP_CONSENTS/,gccp,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from gccp where length(lpad(lilly_person_id,11,0)) != 11 or nvl(lilly_person_id,'xx') is null",NA,NA,GCCP : Lilly Person ID has incorrect values
+310,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/EXCLUSION/HCP_GCCP_CONSENTS/,gccp,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from gccp where nvl(kaiser_flag,'NO') not in ('YES','NO')",NA,NA,GCCP : Kaiser Flag has incorrect values
+311,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/EXCLUSION/HCP_GCCP_CONSENTS/,gccp,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from gccp where tactic = 'EMAIL' and
+upper(trim(nvl(veeva_hard_bounce,'xx'))) not in ('YES','NO','XX')",NA,NA,GCCP : Veeva Hard Bounce has incorrect values
+312,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/EXCLUSION/HCP_GCCP_CONSENTS/,gccp,|,csv,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from gccp where tactic = 'EMAIL' and
+upper(trim(nvl(status,'xx'))) not in ('IN','OUT')",NA,NA,GCCP : Status has incorrect values
+313,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=PO_START_DATE/,rep_alignment_fia_po,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select count(*) c1 from
+(
+select customer_id, product_id, territory_sk, territory_name,
+salesforce_id, salesforce_code, rep_id from
+rep_alignment_fia_po
+) x1
+) y1
+where c1=0",NA,NA,Rep Alignment FIA_PO : Column names are incorrect
+314,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=PO_START_DATE/,rep_alignment_fia_po,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from rep_alignment_fia_po where length(lpad(customer_id,11,0)) != 11 or nvl(customer_id,'xx') is null",NA,NA,Rep Alignment FIA_PO : Lilly Person ID has incorrect values
+315,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=PO_START_DATE/,rep_alignment_fia_po,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from rep_alignment_fia_po where product_id not in
+('US_304528_DS150','US_304528_DS152','US_304547_598010')",NA,NA,Rep Alignment FIA_PO : Product ID has incorrect values
+316,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=PO_START_DATE/,rep_alignment_fia_po,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from rep_alignment_fia_po where salesforce_code not in
+('USV4','USV5','USV6','USV7','USV8')",NA,NA,Rep Alignment FIA_PO : Salesforce Code has incorrect values
+317,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=PO_START_DATE/,rep_alignment_fia_po,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from rep_alignment_fia_po where salesforce_code||salesforce_id not in
+('USV4Derm_1','USV5Derm_2','USV6Rheum_1','USV7Rheum_2','USV8DERM_RHEUM_HYB')",NA,NA,Rep Alignment FIA_PO : Salesforce Code/ID has incorrect values
+318,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/context_key=US_CONTEXT/source=entities_attributes/,hcp_segment,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from hcp_segment where product_id not in
+('US_304528_DS150','US_304528_DS152','US_304547_598010')",NA,NA,HCP Segment : Product ID LOV is incorrect
+319,Post,US_PO,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/context_key=US_CONTEXT/source=entities_attributes/,hcp_segment,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from hcp_segment where target_segment not in
+('CRITICAL','HIGH','MEDIUM','LOW','PROSPECTS')",NA,NA,HCP Segment : Target Segment LOV is incorrect

@@ -1,0 +1,984 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( user_id as string) as user_id
+from userorgunitmapping
+except
+select cast(user_id as string) as user_id
+from src
+)x",NA,NA,DTT THURSDAY| SUBSET | Mismatch between Userorgunit and user file at user_id level | IMPACT : The DTT ingestion for user orgunit mapping may fail if  there are any users in the file that are not present in users file | Please recheck the respective mappings and source datasets to ensure accuracy
+2,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/metrics/,customerproductorgunitnumericmetric,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( CUSTOMER_ID as string) as customer_id
+from src
+except
+select cast( CUSTOMER_ID as string) as customer_id
+from customer
+)x",NA,NA,DTT THURSDAY| SUBSET | Mismatch between primary_metric (customerorgunitnumericmetric) and customer file at customer_id level| IMPACT : The DTT ingestion for metrics data file may fail if there are any customers in this data file that are not present in the customers file| Please recheck the respective mappings and source datasets to ensure accuracy
+3,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( CUSTOMER_ID as string) as customer_id
+from customerorgunitmetric
+except
+select cast( CUSTOMER_ID as string) as customer_id
+from src	
+)x",NA,NA,DTT THURSDAY| SUBSET | Mismatch between customerorgunitmetric and customer file at customer_id level | IMPACT : The DTT ingestion for customerorgunitmetric file may fail if there are any customers in this data file that are not present in the customers file.| Please recheck the respective mappings and source datasets to ensure accuracy|
+4,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,content_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from (select cast( external_id as string ) as external_id
+from engagementcontent
+except
+select cast( content_id as string ) as content_id
+from src)x",NA,NA,DTT THURSDAY| SUBSET | Mismatch between external_id from engagementcontent and content_id from suggestedengagement file | IMPACT : The DTT ingestion for suggestedengagement file may fail if content_id is not present in engagementcontent. Please recheck the respective mappings and source datasets to ensure accuracy.
+5,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS orgunit_id_customerorgunitmetric_false from ( 
+select distinct(orgunit_id) from src
+except
+select distinct(orgunit_id) from orgunit) AS orgunit_id_customerorgunitmetric_false_TABLE",NA,NA,DTT THURSDAY| SUBSET | Mismatch between customerorgunitmetric and orgunit file at orgunit_id level| IMPACT : The DTT ingestion for customerorgunitmetric file may fail if there are any orgunit in this data file that are not present in the orgunit file. Please recheck the respective mappings and source datasets to ensure accuracy
+6,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS customer_id_customerorgunitmetric_false from(
+select distinct(customer_id) from src
+except
+select distinct(customer_id) from customer) as customer_id_customerorgunitmetric_false_TABLE",NA,NA,DTT THURSDAY| SUBSET | Mismatch between customerorgunitmetric and customer file at customer_id level| IMPACT : The DTT ingestion for customerorgunitmetric file may fail if there are any customers in this data file that are not present in the customers file. Please recheck the respective mappings and source datasets to ensure accuracy
+7,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS customer_id_customerspecialitymapping_false from (
+select distinct(customer_id) from src
+except
+select distinct(customer_id) from customer) as customer_id_customerspecialitymapping_false_TABLE",NA,NA,DTT THURSDAY| SUBSET | Mismatch between customerspecialitymapping and customer file at customer_id level| IMPACT : The DTT ingestion for customerspecialitymapping file may fail if there are any customers in this data file that are not present in the customers file. Please recheck the respective mappings and source datasets to ensure accuracy
+8,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS speciality_id_customerspecialitymapping_false from (
+select distinct(speciality_id) from src
+except
+select distinct(speciality_id) from speciality) as speciality_id_customerspecialitymapping_false_TABLE",NA,NA,DTT THURSDAY| SUBSET | Mismatch between customerspecialitymapping and speciality file at speciality_id level| IMPACT : The DTT ingestion for customerspecialitymapping file may fail if there is any speciality that are not present in the speciality file. Please recheck the respective mappings and source datasets to ensure accuracy
+9,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/entitydetailsvisualizationconfiguration/,entitydetailsvisualizationconfiguration,",",parquet,time_grain,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"Select count(*) AS time_grain_entitydetailsvisualizationconfiguration_false from 
+(select distinct(time_grain) from src
+except
+select distinct(GRAIN_TYPE) from timedata) 
+as time_grain_entitydetailsvisualizationconfiguration_false_table",NA,NA,DTT THURSDAY| SUBSET | Mismatch between entitydetailsvisualizationconfiguration and timedata file at time_grain level| IMPACT : The DTT ingestion for entitydetailsvisualizationconfiguration file may fail if there is any grain_type that are not present in the timedata file. Please recheck the respective mappings and source datasets to ensure accuracy
+10,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT from src where salesforce_id is null or orgunit_id is null,NA,NA,DTT THURSDAY| NULL | salesforce_id is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+11,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT from src where Customer_Id is null or speciality_id is null,NA,NA,DTT THURSDAY| NULL | Customer_Id is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+12,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/filterconfiguration/,filterconfiguration,",",parquet,Filter_section_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT FROM src WHERE Filter_section_id IS NULL,NA,NA,DTT THURSDAY| NULL | Filter_section_id is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+13,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/cyclerunconfiguration/,cyclerunconfiguration,",",parquet,external_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition," select count(*) as NULL_COUNT from src where external_id IS NULL or start_date IS NULL
+or end_date IS NULL or is_primary IS NULL or salesforce_id IS NULL",NA,NA,DTT THURSDAY| NULL | external_id or start_date or end_date or is_primary or salesforce_id is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+14,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/entitydetailsvisualizationconfiguration/,entitydetailsvisualizationconfiguration,",",parquet,Entity_Type,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src WHERE Entity_Type IS NULL,NA,NA,DTT THURSDAY| NULL | Entity_Type is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+15,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/metricgrainmapping/,metricgrainmapping,",",parquet,grain,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where grain is null or metric_name is null or is_deleted is null,NA,NA,DTT THURSDAY| NULL | grain or metric_name or is_deleted is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+16,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where orgunit_id is null or customer_id is null or salesforce_id is null,NA,NA,DTT THURSDAY| NULL | orgunit_id or customer_id or salesforce_id is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+17,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/orgunit/,orgunit,",",parquet,name,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT from src where name is null,NA,NA,DTT THURSDAY| NULL | name is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+18,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/product/,product,",",parquet,product_name,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT from src where product_name is null or product_level_id is null,NA,NA,DTT THURSDAY| NULL | product_name or product_level_id is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+19,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/speciality/,speciality,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as null_count from src where speciality_id is null,NA,NA,DTT THURSDAY| NULL | speciality_id is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+20,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,hcp_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where hcp_id is null or cadence is null or channel_id is null or generated_date is null,NA,NA,DTT THURSDAY| NULL | hcp_id or cadence or channel_id or generated_date is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+21,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/timedata/,timedata,",",parquet,start_date,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,"select count(*) as NULL_COUNT FROM src where start_date is null or end_date is null
+or grain_type is null or is_deleted is null or display_name is null",NA,NA,DTT THURSDAY| NULL | start_date or end_date or grain_type or is_deleted or display_name is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+22,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_login,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where user_login is null or name is null or locale_key is null or role is null or is_deleted is null,NA,NA,DTT THURSDAY| NULL | user_login or name or locale_key or role or is_deleted is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+23,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/userorgunitmapping/,userorgunitmapping,",",parquet,user_orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where user_orgunit_id is null,NA,NA,DTT THURSDAY| NULL | user_orgunit_id is null| IMPACT : Ingestion may fail as this field should not be null as per the app data contract.
+24,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/userfilterconfigurationmapping/,userfilterconfigurationmapping,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where user_id is null or filterconfiguration_id is null,NA,NA,DTT THURSDAY| NULL | user_id or filterconfiguration_id is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+25,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select COUNT(*) from(
+select customer_id, rep_id,salesforce_code, count(*) as insight_count
+from src
+where call_sequencing ='P1' and expiry_date>'current_date' and active_status = 'Y'
+group by customer_id, rep_id,salesforce_code
+HAVING (salesforce_code in ('ALZ_ADC','GI_BIAD_SL2','GI_BIAD_SL1','GI_UNAD_SL') AND COUNT(*) >6) 
+OR  (salesforce_code not in ('ALZ_ADC','GI_BIAD_SL2','GI_BIAD_SL1','GI_UNAD_SL') AND COUNT(*) > 4))o",NA,NA,DTT THURSDAY| DATA TEST |Insights generated per HCP for P1 brand exceed 4 for IMM OR LDO OR OBU and exceed 6 for ALZ or GI. | IMPACT : More than required insights per hcp:rep having 1 suggested product would be visible on app. Please check your configurations of insights and post_processing flow for any issues or double check the source datasets in this mapping.
+26,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select customer_id, rep_id, count(*) as insight_count
+from src
+where call_sequencing ='P2' and expiry_date>'current_date' and active_status ='Y'
+group by customer_id, rep_id HAVING insight_count > 3) n",NA,NA,DTT THURSDAY| DATA TEST | Insights generated per HCP for P2 brand exceed 3| IMPACT : More than required insights per hcp:rep having only 2 suggested product would be visible on app. Please check your configurations of insights and post_processing flow for any issues or double check the source datasets in this mapping.
+27,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select customer_id, rep_id, count(*) as insight_count
+from src
+where insight_type ='PORTFOLIO' and expiry_date>'current_date' and active_status ='Y'
+group by customer_id, rep_id HAVING insight_count > 1)h",NA,NA,DTT THURSDAY| DATA TEST |  Generated portfolio insight per HCP:Rep exceed 1| IMPACT : More than required insights per hcp:rep having 1 or more suggested product would be visible on app which is not inline with the requirements. Please check your configurations of insights and post_processing flow for any issues or double check the source datasets in this mapping.
+28,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select customer_id, rep_id, count(*) as insight_count
+from src
+where call_sequencing ='P3' and expiry_date>'current_date' and active_status ='Y'
+group by customer_id, rep_id HAVING insight_count > 0)k",NA,NA,DTT THURSDAY| DATA TEST | Insights generated per HCP for P3 brand exceed 1| IMPACT : More than required insights per hcp:rep having 3 suggested product would be visible on app. Please check your configurations of insights and post_processing flow for any issues or double check the source datasets in this mapping.
+29,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct orgunit_id
+from src
+except
+select distinct orgunit_id
+from alignment) x",NA,NA,DTT THURSDAY| SUBSET | Mismatch between post_processing thursday output and alignment file at orgunit_id level| IMPACT : The DTT ingestion for alignment file may fail if there is any orgunit_id that are not present in the orgunit file. Please recheck the respective mappings and source datasets to ensure accuracy
+30,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,rep_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct rep_id
+from src
+except
+select distinct id
+from LDG_VEEVA_USERS)x",NA,NA,DTT THURSDAY| SUBSET | Mismatch between post_processing thursday output and veeva_users file at rep_id level| IMPACT : The DTT ingestion for alignment file may fail if there is any rep_id that are not present in the users file. Please recheck the respective mappings and source datasets to ensure accuracy
+31,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,cloud_tag_1,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select metric from (select cloud_tag_1 metric
+from src
+union all
+select cloud_tag_2 metric
+from src
+union all
+select cloud_tag_3 metric
+from src
+union all
+select cloud_tag_4 metric
+from src
+union all
+select cloud_tag_5 metric
+from src
+union all
+select cloud_tag_6 metric
+from src
+)x
+where x.metric not in ('NA','N/A',null)
+except
+select distinct metric_key
+from METRIC_MAPPING
+)z",NA,NA,DTT THURSDAY| The cloud tags are not populated correctly in the FI app backend file for insight metrics and rationale| IMPACT : The cloud tags shown on hcp profile section will not match with the raw data. Please recheck the respective mapping and source dataset to ensure accuracy
+32,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,metric_name_1,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select metric from 
+(select metric_name_1 metric
+from src
+union all
+select metric_name_2 metric
+from src
+union all
+select metric_name_3 metric
+from src
+union all
+select metric_name_4 metric
+from src
+union all
+select metric_name_5 metric
+from src
+union all
+select metric_name_6 metric
+from src
+) as x
+where x.metric not in ('NA','N/A',null)
+except
+select distinct metric_key
+from metric_mapping
+)z",NA,NA,DTT THURSDAY| SUBSET | Mismatch between post_processing thursday output and metricmetadata file at metric_name levels| IMPACT : The metric abesnt in either file would not be seen on DTT App. Please recheck the respective mappings and source datasets to ensure accuracy
+33,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerproductorgunitplanchannelnumericmetric/,customerproductorgunitplanchannelnumericmetric,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*)
+from
+(select distinct upper(channel_id) as channel_id from src as m
+except
+select distinct upper(method_of_payment) as channel_id from payer_raw as b where method_of_payment in ('ASSISTANCE','COMMERCIAL','FFS MEDICAID','MEDICARE','MGD MEDICAID','MEDICARE D','CASH','UNKNOWN','UNKNOWN MEDICAL')
+) a",NA,NA,DTT THURSDAY| DATA TEST | The list of MOPs does not match with the MOPs as per requirement| IMPACT : The MOPs not inline with requirements will be visible on app in payers tab. Please recheck the managed_care mapping and respective source datasets to be double sure
+34,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,product_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct(alignment.product_id) from src as alignment
+except
+select distinct(rep_alignment.product_id) from rep_alignment) z",NA,NA,"DTT THURSDAY| DATA TEST | Mismatch between FI_app alignment file and Rep_alignment at product_id level| IMPACT : Product present in the BR pipeine are missing in DTT rep alignment, possible data loss. Please check the alignment mapping and source datasets to ensure accuracy"
+35,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+	(select count(distinct a.customer_id, a.orgunit_id ) as cnt_rep_alignment, 
+	count(distinct b.customer_id,b.orgunit_id) as cnt_fialignment
+		from 
+		(select distinct customer_id, orgunit_id
+		from src) a
+		LEFT JOIN
+		(select distinct customer_id, orgunit_id
+		from alignment) b
+		ON a.customer_id=b.customer_id 
+		and
+		a.orgunit_id=b.orgunit_id
+	) m 
+where cnt_fialignment != cnt_rep_alignment",NA,NA,DTT THURSDAY| DATA TEST | Mismatch between FI_app alignment file and Rep_alignment at customer_orgunit level| IMPACT : The alignment dependent file ingestion such as customerorgunit may fail due to this. Please check the alignment mapping and source datasets to ensure accuracy
+36,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/payer/,payer,",",parquet,payer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as null_in_payer from src where Payer_Id IS NULL or Payer_Name IS NULL or Is_Deleted IS NULL,NA,NA,DTT THURSDAY| NULL | Payer_Id or Payer_Name or Is_Deleted is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+37,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/plan/,plan,",",parquet,Plan_Id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as null_in_payer from src where Plan_Id IS NULL or Plan_Name IS NULL or Payer_Id IS NULL or Is_Deleted  IS NULL ,NA,NA,DTT THURSDAY| NULL | Plan_Id or Plan_Name or Payer_Id or Is_Deleted is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+38,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/channel/,channel,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as null_in_channel from src where Channel_Id IS NULL or Channel_Name IS NULL or Is_Deleted IS NULL,NA,NA,DTT THURSDAY| NULL | Channel_Id or Channel_Name or Is_Deleted is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+39,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerproductorgunitplanchannelnumericmetric/,customerproductorgunitplanchannelnumericmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as null_managed_care_data from src where 
+Orgunit_Id IS NULL OR Product_Id IS NULL OR Customer_Id IS NULL OR Plan_Id IS NULL OR 
+Channel_Id IS NULL OR Time_Id IS NULL OR SalesForce_Id IS NULL",NA,NA,DTT THURSDAY| NULL | Orgunit_Id or Product_Id or Customer_Id or Plan_Id or Channel_Id or Time_Id or SalesForce_Id is null| IMPACT : Ingestion may fail as these fields should not be null as per the app data contract.
+40,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,channel_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct channel_id_pp
+from 
+(select post_processing.channel_id as channel_id_pp,xyz.channel_id as channel_id_po,
+post_processing.customer_id,orgunit_id
+from src post_processing
+inner join (select * from PO_PRE_PROCESSING_OUTPUT where actual_count>0 and channel_id='VAE') xyz
+on xyz.customer_id=post_processing.customer_id
+and geography_id=orgunit_id and xyz.product_id=post_processing.product_id
+)x
+where channel_id_pp != 'VAE'
+)z",NA,NA,DTT THURSDAY| DATA TEST | These records have suggested VAE in PO output but does not contain channel ID as VAE in post processing Thursday output| IMPACT : No VAEs will be visible on the suggested engagement card for these hcps even though PO recommended. Please recheck the respective mapping and source dataset to ensure accuracy
+41,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,hcp_id,Custom_count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as count_id from 
+(select distinct(hcp_id)
+from src
+except
+select distinct(customer_id)
+from PO_PRE_PROCESSING_OUTPUT
+where actual_count>0
+) as count_table",NA,NA,DTT THURSDAY| SUBSET | Mismatch between suggestedengagement and po output file at customer_id levels| IMPACT : The po recommendations are not inline in the suggestedengagement file that is generated after processing. Please recheck the respective mappings and source datasets to ensure accuracy
+42,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(select distinct hcp_id, orgunit_id from src where upper(channel_id) in ('CALL','VAE')
+except
+select distinct customer_id, geography_id from PO_PRE_PROCESSING_OUTPUT where actual_count>0) z",NA,NA,DTT THURSDAY| DATA TEST |The volume of CALL and VAE of suggested engagement FIA output file does not match with PO output file at HCP:Rep:product level| IMPACT : The  po recommendations are not inline in the suggestedengagement file. Please recheck the corresponding mapping and source dataset to ensure accuracy
+43,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+
+select distinct customer_id 
+from src
+where load_strategy not in ('UPDATE_CYCLE_REFRESH','NOT_PRIORITIZED','UPDATE_FEEDBACK')
+except
+select distinct customer_id 
+from PO_PRE_PROCESSING_OUTPUT where actual_count>0) n
+ ",NA,NA,DTT THURSDAY| DATA TEST | The generated insight does not have a part of either only PO suggested CALL or VAE in post_processing thursday file| IMPACT : The PO recommendations are not correctly captured in the post_processing thursday output file. Please recheck the corresponding mapping and source dataset to ensure accuracy
+44,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select COUNT(*) from 
+(select count(*) as counting, customer_id, rep_id, orgunit_id,product_id 
+from src where insight_type in ('SUMMARY', 'PORTFOLIO', 'URGENT') 
+GROUP BY customer_id, rep_id,orgunit_id, product_id, insight_type)t where counting > 1",NA,NA,DTT THURSDAY| PO_CUTOVER | HCPS HAVING MORE THAN 1 PORTFOLIO OR SUMMARY OR URGENT| IMPACT : More than 1 portfolio will than be visible to rep for a hcp and is not inline with the existing requirements . No implication as such YET please check the respective mappings and source data sets to ensure accuracy
+45,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct geography_id) from 
+( select a.* from  
+(select * from PO_PRE_PROCESSING_OUTPUT where actual_count > 0 ) a 
+inner join 
+(select * from src where rep_id is null) as b 
+on a.customer_id = b.customer_id and
+a.product_id = b.product_id and 
+upper(trim(a.geography_id)) = upper(trim(b.orgunit_id))
+)",NA,NA,DTT THURSDAY| PO_CUTOVER | Note : The numbers of VACANT Terrs in DTT| IMPACT : This is just the count of territories having no rep associated. 
+46,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/PO_PRE_PROCESSING_OUTPUT/sugg_posted_date=PO_START_DATE/,PO_PRE_PROCESSING_OUTPUT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (distinct counter) from (
+select a.customer_id, b.customer_id as counter from 
+(
+select * from monthly_LDG_PI_MODEL where resp_code not in ('US7P')
+union
+select * from quaterly_LDG_PI_MODEL where resp_code in ('US7P')
+)a 
+right join (select * from src where actual_count > 0 
+and product_id !='US_708120_708233')b
+on a.customer_id= b.customer_id
+and 
+(concat(a.product_id,'_',a.indication_id) = b.product_id 
+or a.product_id = b.product_id ) 
+and 
+a.resp_code = b.sales_force_code
+where a.customer_id is null
+) t",NA,NA,DTT THURSDAY| PO_CUTOVER | Mismatch between po output and pi_model file at customer_id level| IMPACT : The hcps having po recommendations will get dropped due to absence of PI insights in pi_model file. Please recheck the source datasets.
+47,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"SELECT Count(*)
+FROM   (SELECT a.customer_id,
+               b.customer_id,
+               a.hcp_city_raw,
+               b.hcp_city,
+               a.total_calls_raw,
+               b.total_calls,
+               a.total_vaes_raw,
+               b.total_vaes
+        FROM   (SELECT DISTINCT tc.customer_id,
+                                Trim(rp.hcp_city) AS hcp_city_raw,
+                                Cast(Nvl(total_calls, 0) AS INT) AS Total_Calls_raw,
+                                Cast(Nvl(total_vaes, 0) AS INT)  AS
+                                Total_VAEs_raw
+                FROM   temp1_customer tc
+                       LEFT JOIN (SELECT customer_id,
+                                         Sum(CASE
+                                               WHEN channel_id = 'CALL'
+                                                    AND call_position = 'P1'
+                                             THEN
+                                               actual_count
+                                             END) AS total_calls,
+                                         Sum(CASE
+                                               WHEN channel_id = 'VAE'
+                                                    AND call_position = 'P1'
+                                             THEN
+                                               actual_count
+                                             END) AS total_vaes
+                                  FROM  PO_PRE_PROCESSING_OUTPUT
+                                  GROUP  BY customer_id) po
+                              ON tc.customer_id = po.customer_id
+                       LEFT JOIN src RP
+                              ON tc.customer_id = rp.customer_id) a
+               LEFT JOIN customer b
+                      ON a.customer_id = b.customer_id) f
+WHERE  trim(hcp_city_raw) != hcp_city
+        OR total_calls_raw != total_calls
+        OR total_vaes_raw != total_vaes;",NA,NA,DTT THURSDAY| Mismatch in rep_alignment and po output| IMPACT : The total calls or vaes or city name is different between the two files and may affect list view attributes city name or total calls or total vaes. Please check the respective mappings and source data sets to ensure accuracy
+48,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,custoomer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT customer_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY customer_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The customer file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+49,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/speciality/,speciality,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT speciality_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY speciality_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The speciality file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+50,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/speciality/,speciality,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as NULL_COUNT FROM src where speciality_id is null or speciality_name is null or speciality_id = '' or speciality_name = '',NA,NA,DTT THURSDAY| NULL | The speciality_name or speciality_ID is null or blank in speciality file| IMPACT : Ingestion may fail as these fields should not be null or blank as per the app data contract.
+51,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT speciality_id, customer_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY speciality_id, customer_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The customerspecialitymapping file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+52,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/product/,product,",",parquet,product_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT product_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY product_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK |  The product file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+53,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/orgunit/,orgunit,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT orgunit_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY orgunit_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The orgunit file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+54,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/payer/,payer,",",parquet,payer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT payer_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY payer_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The payer file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+55,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/plan/,plan,",",parquet,plan_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT plan_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY plan_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The plan file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+56,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/channel/,channel,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT channel_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY channel_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The channel file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+57,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT user_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY user_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The user file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+58,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/userorgunitmapping/,userorgunitmapping,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT user_id, orgunit_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY user_id, orgunit_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The userorgunit file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+59,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/timedata/,timedata,",",parquet,time_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT time_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY time_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The time_data file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+60,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT customer_id, orgunit_id, salesforce_id,  COUNT(*) AS counter
+    FROM src
+    GROUP BY customer_id, orgunit_id, salesforce_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The customerorgunitmetric file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+61,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/metricgrainmapping/,metricgrainmapping,",",parquet,grain,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT grain, metric_name,  COUNT(*) AS counter
+    FROM src
+    GROUP BY grain,metric_name
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The metric_mapping file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+62,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/filterconfiguration/,filterconfiguration,",",parquet,filter_configuration_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT filter_configuration_id,COUNT(*) AS counter
+    FROM src
+    GROUP BY filter_configuration_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The filter_configuration file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+63,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/userfilterconfigurationmapping/,userfilterconfigurationmapping,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT user_id, filterconfiguration_id,COUNT(*) AS counter
+    FROM src
+    GROUP BY user_id, filterconfiguration_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The userfilterconfigurationmapping file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+64,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/engagementcontent/,engagementcontent,",",parquet,external_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT external_id,COUNT(*) AS counter
+    FROM src
+    GROUP BY external_id
+    HAVING counter > 1
+) AS k",NA,NA,"DTT THURSDAY| GRAIN_CHECK | The engagementcontent file contains duplicate records at its grain.
+| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. "
+65,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerproductorgunitplanchannelnumericmetric/,customerproductorgunitplanchannelnumericmetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT COUNT(*) AS false_count
+FROM (
+    SELECT customer_id, orgunit_id, product_id, time_id, plan_id, channel_id, salesforce_id, COUNT(*) AS counter
+    FROM src
+    GROUP BY customer_id, orgunit_id, product_id, time_id, channel_id, salesforce_id, plan_id
+    HAVING counter > 1
+) AS k",NA,NA,DTT THURSDAY| GRAIN_CHECK | The customerproductorgunitplanchannelnumericmetric file contains duplicate records at its grain.| IMPACT : The DTT ingestion of this file may fail due to duplicates. Please check the respective mapping and source dataset to ensure accuracy. 
+66,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count( distinct concatinated) from (
+select concat(customer_id,'_',product_id) as concatinated from src
+except
+select concat(customer_id,'_',product_id) as concatinated from alignment_raw) l",NA,NA,DTT THURSDAY| Mismatch between FI_alignment file and BR_alignment file at customer_product level| IMPACT : The mismatch in aligned would result in data loss. Please check the respective mapping and source datasets to ensure accuracy. 
+67,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count( distinct concatinated) from (
+select customer_id as concatinated from src
+except
+select customer_id as concatinated from alignment_raw) j",NA,NA,DTT THURSDAY| Mismatch between FI_alignment file and BR alignment file at customer_id level| IMPACT :The mismatch in aligned would result in data loss. Please check the respective mapping and source datasets to ensure accuracy. 
+68,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,content_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count( distinct concatinated) from (
+select content_id as concatinated from src
+except
+select external_id as concatinated from engagementcontent) s",NA,NA,DTT THURSDAY| SUBSET | Mismatch in the content_id of suggestedengagements and external_id of engagementcontent file.| IMPACT : This means that the po recommendations are not inline in the suggestedengagement file. Please recheck the respective mapping and source dataset to ensure accuracy
+69,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 4-counter as false_count from(
+select count (distinct channel_id) as counter from src) k",NA,NA,DTT THURSDAY| All 4 expected channel ids are not present in suggested engagement file| IMPACT : One or more channel_id is not getting generated. The data to be shown on the suggestedengagement card might be in incorrect. Please check the respective mapping and source dataset to ensure accuracy.
+70,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,external_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as false_record from(
+select count(*) as counter, external_id from src group by external_id)l where counter > 1",NA,NA,DTT THURSDAY| GRAIN_CHECK | The suggestedengagement file contains duplicates at its grain external_id.| IMPACT : The DTT ingestion of suggestedengagement file may fail. Please recheck the corresponding mapping and source dataset to ensure accuracy
+71,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,custoomer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select distinct customer_id from po_alignment
+except 
+select distinct customer_id from src
+)a",NA,NA,DTT THURSDAY| HCPs from the first week are not present in customer| IMPACT : If there are any Week1 customer data updates then it might not be reflected. Please check the respective mapping and source datasets to ensure accuracy.  
+72,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,custoomer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src
+where 
+nvl(customer_id,'')='' or
+nvl(veeva_integration_id,'')='' or
+nvl(customer_veeva_id,'')='' or
+nvl(customer_type,'')='' or
+nvl(hcp_first_name,'')='' or
+nvl(hcp_last_name,'')='' or
+nvl(display_customer_name,'')='' or
+nvl(pdrp_display_flag,'')='' or
+nvl(is_deleted,'')='' or
+nvl(address,'')='' or
+nvl(hcp_zip,'')='' or
+nvl(latitude,'')='' or
+nvl(longitude,'')='' or
+nvl(hcp_city,'')='' or
+nvl(state,'')='' or
+nvl(jar_target,'')='' or
+nvl(country,'')='' ",NA,NA,DTT THURSDAY| NULL | Warning : One of the fields in the customer file is null|
+73,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,custoomer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src where nvl(hcp_city,'')='' 
+and nvl(address,'')!=''",NA,NA,DTT THURSDAY| DATA TEST | Warning : City is not populated even though address is available
+74,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,custoomer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src where nvl(hcp_city,'')!='' 
+and nvl(address,'')=''",NA,NA,DTT THURSDAY| DATA TEST | Warning : Address is not populated even though city is available
+75,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select id from LDG_VEEVA_USERS where 
+salesforce_code__c in ('USV4','USV5','USV6','USV7','USV8','US8D','US8E','US8F','US7P','US1U')
+and upper(isactive)='TRUE' and upper(profile_name_vod__c)!='INACTIVE USER'
+except 
+select user_id from src)a",NA,NA,DTT THURSDAY| Eligible TMs are missing in users file| IMPACT : Customer reach might get impacted. Please recheck the rep_alignment flow and source dataset to ensure accuracy
+76,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src
+where 
+nvl(customer_id,'')='' or
+nvl(salesforce_id,'')='' or
+nvl(product_id,'')='' or
+nvl(orgunit_id,'')='' or
+nvl(is_deleted,'')='' or
+nvl(address,'')='' or
+nvl(hcp_zip,'')='' or
+nvl(latitude,'')='' or
+nvl(longitude,'')='' or
+nvl(hcp_city,'')='' or
+nvl(state,'')='' or
+nvl(country,'')='' ",NA,NA,DTT THURSDAY| NULL | Warning :  One of the fields in alignment file is null
+77,POST,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select hcp_id, orgunit_id,channel_id, count(1) as ct1 from src
+group by hcp_id, orgunit_id,channel_id) p
+left join 
+(
+select customer_id,geography_id,channel_id, sum(actual_count) as ct from PO_PRE_PROCESSING_OUTPUT 
+where  actual_count > 0 and call_position = 'P1'
+group by customer_id,geography_id,channel_id
+UNION
+select distinct customer_id,geography_id, 'TERRITORY_GROUP_CALL' As channel_id,
+sum(actual_count) over (partition by customer_id,terr_group order by 1 ) as ct
+from 
+( select p.*, r.terr_group from PO_PRE_PROCESSING_OUTPUT p
+left join (select distinct territory_sk, terr_group from REP_ALIGNMENT) r
+on p.geography_id = r.territory_sk
+where  actual_count > 0 and p.channel_id = 'CALL' and call_position = 'P1' 
+and Sales_force_code not in ('US7P')) a
+UNION
+select distinct customer_id,geography_id, 'BU_LEVEL_CALL' as channel_id,
+sum(actual_count) over (partition by customer_id,business_unit_id order by 1 ) as ct
+from 
+( select p.*, r.business_unit_id from PO_PRE_PROCESSING_OUTPUT p
+left join (select distinct territory_sk, case when salesforce_code = 'USV8' then 'US_BMBU_IMM' else
+business_unit_id end as  business_unit_id from REP_ALIGNMENT) r
+on p.geography_id = r.territory_sk
+where  actual_count > 0 and p.channel_id = 'CALL' and call_position = 'P1') a
+) r
+on p.hcp_id = r.customer_id and p.channel_id = r.channel_id
+and p.orgunit_id = r.geography_id 
+where p.ct1 != r.ct",NA,NA,"DTT THURSDAY| EXTRACT |The volume of CALL and VAE of suggested engagement FIA output file does not match with PO output file at hcp_id, orgunit_id,channel_id level| IMPACT : This means that the  po recommendations are not correctly captured in the suggestedengagement file. Please recheck the respective mapping and source dataset to ensure accuracy"
+78,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct 
+a.business_unit_id as `Business Unit`,
+a.salesforce_id as Sleeve ,
+a.terr_ct as `# Territories `, 
+substr(format_number(a.active_terr_ct, 3),0,length(format_number(a.active_terr_ct, 3))-4)  as `# Active TMs`,
+m_prod.src_prod_nm as `Brand Indication`
+,substr(format_number(c.suggested_cust_count_sleeve, 3),0,length(format_number(c.suggested_cust_count_sleeve, 3))-4)   as `# Distinct HCPs suggested` 
+,substr(format_number(b.eligible_cust_count, 3),0,length(format_number(b.eligible_cust_count, 3))-4)   as `Searchable Universe`
+,substr(format_number(nvl(i.PDRP_cust_ct_sleeve,0), 3),0,length(format_number(nvl(i.PDRP_cust_ct_sleeve,0), 3))-4)  as `# Suggested HCPs that are PDRP opt out`
+,substr(format_number(nvl(a1.suggested_cust_count,0), 3),0,length(format_number(nvl(a1.suggested_cust_count,0), 3))-4) as `# HCPs Suggested (Call or VAE)`
+,substr(format_number(nvl(i.Portfolio_insight_ct_1,0), 3),0,length(format_number(nvl(i.Portfolio_insight_ct_1,0), 3))-4) as `# Portfolio Insights`
+,substr(format_number(nvl(i.Summary_insight_ct_1,0), 3),0,length(format_number(nvl(i.Summary_insight_ct_1,0), 3))-4) as  `# Brand Summary Insights`
+,substr(format_number(nvl(i.BR_insight_ct_1,0), 3),0,length(format_number(nvl(i.BR_insight_ct_1,0), 3))-4) as `# BR insights`
+--,i.portfolio_cust_ct, i.Summary_cust_ct,i.BR_cust_ct,i.REP_feedback_scrub_prod, PDRP_Dismiss_cust_ct
+,substr(format_number(nvl(nvl(c.suggested_cust_count_sleeve,0) - i.portfolio_cust_ct,0), 3),0,length(format_number(nvl(nvl(c.suggested_cust_count_sleeve,0) - i.portfolio_cust_ct,0), 3))-4) as  `# HCPs suggested with zero portfolio Insights`
+,case when a.salesforce_id = 'ALZ_ADC' then 'NA' 
+else substr(format_number(nvl(nvl(a1.suggested_cust_count,0) - nvl(PDRP_Dismiss_cust_ct,0) - i.Summary_cust_ct,0), 3),0,length(format_number(nvl(nvl(a1.suggested_cust_count,0) - nvl(PDRP_Dismiss_cust_ct,0) - i.Summary_cust_ct,0), 3))-4) end as `# HCPs suggested with zero brand summary Insights`
+,substr(format_number(nvl(nvl(a1.suggested_cust_count,0) - nvl(PDRP_Dismiss_cust_ct,0) - i.BR_cust_ct,0), 3),0,length(format_number(nvl(nvl(a1.suggested_cust_count,0) - nvl(PDRP_Dismiss_cust_ct,0) - i.BR_cust_ct,0), 3))-4) as `# HCPs suggested with zero BR Insights`
+,round(i.Distinct_guid_br_Summary/active_terr_ct,2) as `Avg insight per rep (without portfolio insights)`
+,round(i.Distinct_guid_br_Summary/(active_hcp_terr-nvl(PDRP_cust_sleeve_ct_sleeve,0)),2)  as `Avg insight per HCP-Rep (without portfolio insights)`
+,substr(format_number(nvl(nvl(i.REP_feedback_scrub,0),0), 3),0,length(format_number(nvl(nvl(i.REP_feedback_scrub,0),0), 3))-4) as `# HCPs dismissed`
+,avg_cloud_tags_per_hcp as `Avg cloud tags per HCP-TM`
+--,i.Distinct_HCP_REP as Distinct_HCP_REP
+--,i.Distinct_HCP_REP_sleeve
+from (
+select r.salesforce_id,p.sales_force_code, p.product_id, r.business_unit_id,
+count(distinct p.geography_id) as terr_ct, count(distinct r.rep_id) as active_terr_ct, 
+count(distinct p.customer_id, r.rep_id) as active_hcp_terr from PO_PRE_PROCESSING_OUTPUT p 
+inner join REP_ALIGNMENT r on
+p.customer_id = r.customer_id and p.product_id = r.product_id and p.geography_id = r.territory_sk
+--inner join veeva_users v on v.id = r.rep_id
+where p.actual_count > 0
+group by  r.salesforce_id,p.sales_force_code, p.product_id, r.business_unit_id) a
+left join (
+select r.salesforce_id, p.sales_force_code, p.product_id, count(distinct p.customer_id) as suggested_cust_count  from PO_PRE_PROCESSING_OUTPUT p 
+inner join REP_ALIGNMENT r on
+p.customer_id = r.customer_id and p.product_id = r.product_id and p.geography_id = r.territory_sk
+--inner join veeva_users v on v.id = r.rep_id
+where p.actual_count > 0 and r.rep_id is not null
+group by  r.salesforce_id,p.sales_force_code, p.product_id ) a1
+on a1.salesforce_id = a.salesforce_id  and a1.product_id = a.product_id
+left join (
+select r.salesforce_id, count(distinct r.customer_id) as eligible_cust_count 
+from REP_ALIGNMENT r 
+group by  r.salesforce_id ) b 
+on a.salesforce_id = b.salesforce_id 
+left join (
+select p.sales_force_code,  count(distinct p.customer_id) as suggested_cust_count_sleeve 
+from PO_PRE_PROCESSING_OUTPUT p 
+inner join REP_ALIGNMENT r on
+p.customer_id = r.customer_id and p.product_id = r.product_id and p.geography_id = r.territory_sk
+--inner join veeva_users v on v.id = r.rep_id
+where p.actual_count > 0 and rep_id is not null
+group by  p.sales_force_code ) c
+on a.sales_force_code =  c.sales_force_code  
+left join (
+select p.sales_force_code,  count(distinct p.customer_id) as suggested_cust_count_sleeve_vacant
+from PO_PRE_PROCESSING_OUTPUT p 
+inner join REP_ALIGNMENT r on
+p.customer_id = r.customer_id and p.product_id = r.product_id and p.geography_id = r.territory_sk
+--inner join veeva_users v on v.id = r.rep_id
+where p.actual_count > 0 and rep_id is not null
+group by  p.sales_force_code ) c1
+on a.sales_force_code =  c1.sales_force_code 
+left join (
+select distinct c.salesforce_code, c.product_id, d.Portfolio_insight_ct, c.Summary_insight_ct,
+c.BR_insight_ct,d2.portfolio_cust_ct, c.Summary_cust_ct,c.BR_cust_ct, e.PDRP_Dismiss_cust_ct, e1.PDRP_cust_ct_sleeve,e1.PDRP_cust_sleeve_ct_sleeve,
+f.REP_feedback_scrub, g.Distinct_guid_br_Summary, h.REP_feedback_scrub_prod, 
+g1.Distinct_HCP_REP_sleeve, k.total_cloud_tags, k.total_cloud_tags/g1.Distinct_HCP_REP_sleeve as avg_cloud_tags_per_hcp,
+d1.Portfolio_insight_ct_1, c1.Summary_insight_ct_1,
+c1.BR_insight_ct_1
+from (
+
+select salesforce_code, product_id, count(distinct Summary_insight_ct) as Summary_insight_ct,
+count(distinct BR_insight_ct) as BR_insight_ct, count(distinct Summary_cust_ct) as Summary_cust_ct,
+count(distinct BR_cust_ct) as BR_cust_ct
+from (
+select distinct salesforce_code,product_id,
+case when insight_type= 'SUMMARY' then  guid else null end as Summary_insight_ct, 
+case when insight_type= 'BR' then  guid else null end as BR_insight_ct, 
+case when insight_type= 'SUMMARY' then z.customer_id else null end as Summary_cust_ct, 
+case when insight_type= 'BR' then z.customer_id else null end as BR_cust_ct
+from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and concat(z.customer_id,z.salesforce_code,z.product_id) not in (
+select distinct concat(x.customer_id,x.salesforce_code,x.product_id) from NEW_INSIGHTS_CURRENT_WEEK x
+where rep_id is not null  and load_strategy in ('DISMISSED','UPDATE_FEEDBACK') )
+and 'current_date'< expiry_date and insight_type != 'PORTFOLIO' ) a 
+group by salesforce_code,product_id) c
+
+left join 
+
+(
+select  salesforce_code,count(distinct guid) as Portfolio_insight_ct from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null and active_status = 'Y' and 
+(load_strategy like 'ADD%' or load_strategy like 'UPDATE%') and load_strategy not like ""%PDRP%"" 
+and concat(z.customer_id,z.salesforce_code) not in (
+select distinct concat(x.customer_id,x.salesforce_code) from NEW_INSIGHTS_CURRENT_WEEK x
+where rep_id is not null  and load_strategy in ('DISMISSED','UPDATE_FEEDBACK') )
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO' 
+group by salesforce_code) d on c.salesforce_code = d.salesforce_code
+left join(
+select  salesforce_code,
+count(distinct z.customer_id) as portfolio_cust_ct from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null 
+and insight_type = 'PORTFOLIO' and upper(concat(z.customer_id,z.salesforce_code)) in (
+select distinct UPPER(concat(p.customer_id,r.salesforce_id)) from PO_PRE_PROCESSING_OUTPUT p
+left join (select distinct territory_sk, rep_id, salesforce_id from REP_ALIGNMENT) r
+on r.territory_sk = p.geography_id
+where actual_count > 0 and r.rep_id is not null )
+group by salesforce_code) d2 
+on c.salesforce_code = d2.salesforce_code
+left join
+(
+select salesforce_code, product_id, count(distinct Summary_insight_ct) as Summary_insight_ct_1,
+count(distinct BR_insight_ct) as BR_insight_ct_1, count(distinct Summary_cust_ct) as Summary_cust_ct_1,
+count(distinct BR_cust_ct) as BR_cust_ct_1
+from (
+select distinct salesforce_code,product_id,
+case when insight_type= 'SUMMARY' then  guid else null end as Summary_insight_ct, 
+case when insight_type= 'BR' then  guid else null end as BR_insight_ct, 
+case when insight_type= 'SUMMARY' then z.customer_id else null end as Summary_cust_ct, 
+case when insight_type= 'BR' then z.customer_id else null end as BR_cust_ct
+from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type != 'PORTFOLIO' ) a 
+group by salesforce_code,product_id) c1
+on c1.salesforce_code = c.salesforce_code and c1.product_id = c.product_id
+left join (
+select  salesforce_code,count(distinct guid) as Portfolio_insight_ct_1,
+count(distinct z.customer_id) as portfolio_cust_ct from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null and active_status = 'Y' and 
+(load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO' 
+group by salesforce_code) d1 on c1.salesforce_code = d1.salesforce_code
+
+left join (
+select  salesforce_code,product_id, count(distinct customer_id) as PDRP_Dismiss_cust_ct from
+(
+select distinct salesforce_code, product_id, z.customer_id  from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null  and (load_strategy like '%PDRP%')
+and z.insight_type != 'PORTFOLIO' and upper(concat(z.customer_id,z.salesforce_code)) in (
+select distinct UPPER(concat(p.customer_id,r.salesforce_id)) from PO_PRE_PROCESSING_OUTPUT p
+left join (select distinct territory_sk, rep_id, salesforce_id from REP_ALIGNMENT) r
+on r.territory_sk = p.geography_id
+where actual_count > 0 and r.rep_id is not null
+)
+union
+select distinct salesforce_code, product_id, z.customer_id from NEW_INSIGHTS_CURRENT_WEEK z
+where rep_id is not null  and ( load_strategy in ('DISMISSED','UPDATE_FEEDBACK'))
+and z.insight_type != 'PORTFOLIO' and upper(concat(z.customer_id,z.salesforce_code,z.product_id)) in (
+select distinct UPPER(concat(p.customer_id,r.salesforce_id,p.product_id)) from PO_PRE_PROCESSING_OUTPUT p
+left join (select distinct territory_sk, rep_id, salesforce_id from REP_ALIGNMENT) r
+on r.territory_sk = p.geography_id
+where actual_count > 0 and r.rep_id is not null
+)
+) x1
+group by salesforce_code, product_id
+) e on e.salesforce_code = c.salesforce_code and e.product_id = c.product_id
+left join (
+select  salesforce_code, count(distinct customer_id) as PDRP_cust_ct_sleeve, count(distinct customer_id, orgunit_id) as PDRP_cust_sleeve_ct_sleeve
+from NEW_INSIGHTS_CURRENT_WEEK 
+where rep_id is not null  and (load_strategy like '%PDRP%') 
+group by salesforce_code) e1 on e1.salesforce_code = c.salesforce_code 
+left join (
+select  a.salesforce_code, nvl(count(distinct a.customer_id),0) as REP_feedback_scrub from (
+select distinct p.salesforce_code,r.territory_sk, p.customer_id from NEW_INSIGHTS_CURRENT_WEEK p 
+left join (select distinct territory_sk, rep_id, salesforce_code from REP_ALIGNMENT) r
+on r.territory_sk = p.orgunit_id
+where r.rep_id is not null  and load_strategy in ('DISMISSED','UPDATE_FEEDBACK') and
+concat(p.customer_id,r.salesforce_code,r.territory_sk) in (
+select distinct concat(customer_id,sales_force_code,geography_id) from PO_PRE_PROCESSING_OUTPUT where actual_count > 0 ) ) a 
+group by a.salesforce_code ) f on f.salesforce_code = c.salesforce_code
+left join (
+select  salesforce_code, product_id, round(count(distinct guid)) as  Distinct_guid_br_Summary
+from NEW_INSIGHTS_CURRENT_WEEK 
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type != 'PORTFOLIO'
+group by salesforce_code, product_id) g on g.salesforce_code = c.salesforce_code and g.product_id = c.product_id
+left join (
+select  salesforce_code,  count(distinct rep_id,customer_id) as Distinct_HCP_REP_sleeve
+from NEW_INSIGHTS_CURRENT_WEEK 
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and load_strategy not like '%PDRP%'
+group by salesforce_code) g1 on g1.salesforce_code = c.salesforce_code 
+left join (
+select  p.salesforce_code,product_id, nvl(count(distinct customer_id),0) as REP_feedback_scrub_prod from NEW_INSIGHTS_CURRENT_WEEK p 
+left join (select distinct territory_sk, rep_id, salesforce_code from REP_ALIGNMENT) r
+on r.territory_sk = p.orgunit_id
+where r.rep_id is not null  and load_strategy in ('DISMISSED','UPDATE_FEEDBACK') 
+and concat(p.customer_id,r.salesforce_code,p.product_id) in (
+select distinct concat(customer_id,sales_force_code,product_id) from PO_PRE_PROCESSING_OUTPUT po where actual_count > 0
+)
+group by p.salesforce_code, product_id ) h  on h.salesforce_code = c.salesforce_code and h.product_id = c.product_id
+left join (
+select salesforce_code, count(ct) as total_cloud_tags from (
+select distinct salesforce_code,customer_id, rep_id, case when cloud_tag_1 in ('',' ') then NULL else cloud_tag_1 end as ct from NEW_INSIGHTS_CURRENT_WEEK
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO' 
+union
+select distinct salesforce_code,customer_id, rep_id, case when cloud_tag_2 in ('',' ') then NULL else cloud_tag_2 end as ct from NEW_INSIGHTS_CURRENT_WEEK
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO'
+union 
+select distinct salesforce_code,customer_id, rep_id, case when cloud_tag_3 in ('',' ') then NULL else cloud_tag_3 end as ct from NEW_INSIGHTS_CURRENT_WEEK
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO'
+union 
+select distinct salesforce_code,customer_id, rep_id, case when cloud_tag_4 in ('',' ') then NULL else cloud_tag_4 end as ct from NEW_INSIGHTS_CURRENT_WEEK
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO'
+union 
+select distinct salesforce_code,customer_id, rep_id, case when cloud_tag_5 in ('',' ') then NULL else cloud_tag_5 end as ct from NEW_INSIGHTS_CURRENT_WEEK
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO'
+union 
+select distinct salesforce_code,customer_id, rep_id, case when cloud_tag_6 in ('',' ') then NULL else cloud_tag_6 end as ct from NEW_INSIGHTS_CURRENT_WEEK
+where rep_id is not null and active_status = 'Y' and (load_strategy like 'ADD%' or load_strategy like 'UPDATE%')
+and 'current_date'< expiry_date and insight_type = 'PORTFOLIO' ) 
+j group by salesforce_code
+) k 
+on k.salesforce_code = c.salesforce_code
+) i 
+on upper(a.salesforce_id) = i.salesforce_code and a.product_id = i.product_id
+left join 
+(select distinct src_prod_nm,tgt_prod_nm from m_prod_xref where src_nm = 'FIA_METRICS') m_prod 
+on m_prod.tgt_prod_nm = a.product_id
+order by `Business Unit`,Sleeve ,`Brand Indication`",NA,NA,DTT THURSDAY| Thursday Weekly Summary
+79,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/PO_PRE_PROCESSING_OUTPUT/sugg_posted_date=PO_START_DATE/,PO_PRE_PROCESSING_OUTPUT,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct business_unit_id as `Business Unit`, upper(salesforce_id) as `Sleeve`, brand_name
+,substr(format_number(cast(`Total # of Territories aligned` as int), 3),0,length(format_number(cast(`Total # of Territories aligned`as int), 3))-4) as `Total # of Territories aligned`
+,substr(format_number(cast(`# HCPs reached (Call or VAE)` as INT), 3),0,length(format_number( cast(`# HCPs reached (Call or VAE)`as INT), 3))-4) as `# HCPs reached (Call or VAE)`
+,substr(format_number(cast(`# Suggested P1 Calls`as INT), 3),0,length(format_number(cast(`# Suggested P1 Calls`as INT), 3))-4) as `# Suggested P1 Calls`
+,substr(format_number(cast(`# Suggested P2 Calls`as INT), 3),0,length(format_number(cast(`# Suggested P2 Calls`as INT), 3))-4) as `# Suggested P2 Calls`
+,substr(format_number(cast(`# Suggested P3 Calls`as INT), 3),0,length(format_number(cast(`# Suggested P3 Calls`as INT), 3))-4) as `# Suggested P3 Calls`
+,substr(format_number(cast(`# Suggested VAEs`as INT), 3),0,length(format_number(cast(`# Suggested VAEs`as INT), 3))-4) as `# Suggested VAEs`
+from (
+select  salesforce_id, brand_name, business_unit_id,
+count(distinct  geography_id ) as `Total # of Territories aligned`,
+nvl(count( distinct (case when actual_count > 0 then customer_id end)),'0') as `# HCPs reached (Call or VAE)`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'CALL' and call_position = 'P1' then actual_count end),'0') as `# Suggested P1 Calls`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'CALL' and call_position = 'P2' then actual_count end),'0' ) as `# Suggested P2 Calls`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'CALL' and call_position = 'P3' then actual_count end),'0') as `# Suggested P3 Calls`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'VAE' then actual_count end),'0') as `# Suggested VAEs`
+from (select Distinct a.customer_id,a.channel_id ,a.product_id ,b.brand_name,a.call_position,a.geography_id,
+c.salesforce_id,a.actual_count, a.metric_value, c.business_unit_id from 
+(select * from src where actual_count>0 and concat(Sales_force_code,'_',upper(channel_id)) not in ('US7P_CALL')
+union
+select * from archival_po_pre where actual_count>0 and  concat(Sales_force_code,'_',upper(channel_id)) in ('US7P_CALL')
+) a
+left join
+(select distinct src_prod_nm as brand_name,tgt_prod_nm
+from m_prod_xref
+where src_nm = 'FIA_METRICS') b
+on b.tgt_prod_nm = a.product_id
+left join 
+REP_ALIGNMENT c
+on 
+a.customer_id=c.customer_id
+and a.product_id=c.product_id
+and a.geography_id=c.orgunit_id
+) c
+group by salesforce_id, brand_name, business_unit_id
+order by salesforce_id, brand_name ) e
+order by `Business Unit` , `Sleeve`, brand_name ",NA,NA,Thursday PO Summary : To be sent in week 1 of DT cycle
+80,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/02_OUTPUT_FILES/INGESTIONS/LDG_PO_OUTPUT/,RAW_PO_OUTPUT,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct
+business_unit_id as `Business Unit`
+,sales_force_code as Sleeve
+,substr(format_number(cast(`# Suggested P1 Calls` as INT), 3),0,length(format_number( cast(`# Suggested P1 Calls` as INT), 3))-4) as `# Suggested P1 Calls`
+,substr(format_number(cast(`# Suggested P2 Calls` as INT), 3),0,length(format_number( cast(`# Suggested P2 Calls` as INT), 3))-4) as `# Suggested P2 Calls`
+,substr(format_number(cast(`# Suggested P3 Calls` as INT), 3),0,length(format_number( cast(`# Suggested P3 Calls` as INT), 3))-4) as `# Suggested P3 Calls`
+,substr(format_number(cast(`# Suggested VAEs` as INT), 3),0,length(format_number( cast(`# Suggested VAEs` as INT), 3))-4) as `# Suggested VAEs`
+,`% Dropped P1 Calls`
+,`% Dropped P2 Calls`
+,`% Dropped P3 Calls`
+,`% Dropped VAEs` 
+from
+(
+select distinct 
+salesforce_id as sales_force_code,
+`# Suggested P1 Calls`,
+`# Suggested P2 Calls`,
+`# Suggested P3 Calls`,
+`# Suggested VAEs`,
+`% Dropped P1 Calls`,
+`% Dropped P2 Calls`,
+`% Dropped P3 Calls`,
+`% Dropped VAEs`,
+y.business_unit_id
+from
+(
+select sales_force_code,
+nvl(max(`P1_#call_sugg`),0) as `# Suggested P1 Calls`,
+nvl(max(`P2_#call_sugg`),0) as `# Suggested P2 Calls`,
+nvl(max(`P3_#call_sugg`),0) as `# Suggested P3 Calls`,
+nvl(max(`#VAE_sugg`),0) as `# Suggested VAEs`,
+nvl(max(`P1_%call_DROP`),0) as `% Dropped P1 Calls`,
+nvl(max(`P2_%call_DROP`),0) as `% Dropped P2 Calls`,
+nvl(max(`P3_%call_DROP`),0) as `% Dropped P3 Calls`,
+nvl(max(`VAE_%_DROP`),0) as `% Dropped VAEs`
+from (
+select distinct sales_force_code,
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P1_#call_sugg`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P2_#call_sugg`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P3_#call_sugg`,
+case when upper(channel_id) = 'VAE' then sum_of_actual end as `#VAE_sugg`,
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P1_%call_DROP`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P2_%call_DROP`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P3_%call_DROP`,
+case when  upper(channel_id) = 'VAE' then `% ac_drop` end as `VAE_%_DROP`
+from (
+select distinct channel_id, sales_force_code,call_position, sum_of_actual, drop_actual,
+round((drop_actual/sum_of_actual)*100,2)||'%' as `% ac_drop`
+from (
+select distinct channel_id, sales_force_code,call_position,	
+sum(actual_count) over (partition by channel_id, sales_force_code,call_position ) as sum_of_actual,	
+sum( case when rep_align_customer_id is NULL then actual_count else 0 end ) over (partition by channel_id, sales_force_code,call_position ) as drop_actual 
+from	
+(	
+select  po1.*, rep_align.customer_id rep_align_customer_id from	
+(
+select * from src where actual_count>0 and concat(Sales_force_code,'_',upper(channel_id)) not in ('US7P_CALL')
+union
+select * from archival_raw_po where actual_count>0 and concat(Sales_force_code,'_',upper(channel_id)) in ('US7P_CALL')
+) po1	
+left join (select Distinct customer_id,territory_sk,product_id,salesforce_code from REP_ALIGNMENT) rep_align	
+on rep_align.customer_id = po1.customer_id	
+and rep_align.territory_sk = po1.geography_id	
+and rep_align.product_id = po1.product_id	
+and rep_align.salesforce_code = po1.sales_force_code	
+) x1	) a ) b
+) c group by sales_force_code) x
+left join (
+select distinct salesforce_code, salesforce_id, business_unit_id from REP_ALIGNMENT rep_align ) y 
+on x.sales_force_code = y.salesforce_code
+
+union
+
+select 
+'TOTAL' as sales_force_code,
+nvl(max(`P1_#call_sugg`),0) as `# Suggested P1 Calls`,
+nvl(max(`P2_#call_sugg`),0) as `# Suggested P2 Calls`,
+nvl(max(`P3_#call_sugg`),0) as `# Suggested P3 Calls`,
+nvl(max(`#VAE_sugg`),0) as `# Suggested VAEs`,
+nvl(max(`P1_%call_DROP`),0) as `% Dropped P1 Calls`,
+nvl(max(`P2_%call_DROP`),0) as `% Dropped P2 Calls`,
+nvl(max(`P3_%call_DROP`),0) as `% Dropped P3 Calls`,
+nvl(max(`VAE_%_DROP`),0) as `% Dropped VAEs`,
+'TOTAL' as business_unit_id
+from (
+select distinct
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P1_#call_sugg`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P2_#call_sugg`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P3_#call_sugg`,
+case when upper(channel_id) = 'VAE' then sum_of_actual end as `#VAE_sugg`,
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P1_%call_DROP`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P2_%call_DROP`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P3_%call_DROP`,
+case when  upper(channel_id) = 'VAE' then `% ac_drop` end as `VAE_%_DROP`
+from (
+select distinct channel_id,call_position, sum_of_actual, drop_actual,
+round((drop_actual/sum_of_actual)*100,2)||'%' as `% ac_drop`
+from (
+select distinct channel_id,call_position,	
+sum(actual_count) over (partition by channel_id,call_position ) as sum_of_actual,	
+sum( case when rep_align_customer_id is NULL then actual_count else 0 end ) over (partition by channel_id,call_position ) as drop_actual 	
+from	
+(	
+select  po1.*, rep_align.customer_id rep_align_customer_id from	
+(
+select * from src where actual_count>0 and concat(Sales_force_code,'_',upper(channel_id)) not in ('US7P_CALL')
+union
+select * from archival_raw_po where actual_count>0 and concat(Sales_force_code,'_',upper(channel_id)) in ('US7P_CALL')
+) po1	
+left join (select Distinct customer_id,territory_sk,product_id,salesforce_code from REP_ALIGNMENT) rep_align	
+on rep_align.customer_id = po1.customer_id	
+and rep_align.territory_sk = po1.geography_id	
+and rep_align.product_id = po1.product_id	
+and rep_align.salesforce_code = po1.sales_force_code	
+) x1	) a ) b
+) c 
+)d
+order by `Business Unit` DESC, Sleeve ",NA,NA,Thursday PO Drop Summary  : To be sent in week 1 of DT cycle
+81,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/metrics/,metrics,",",parquet,taltz_derm_eval_claim_volume_6_m,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"Select 
+sum(nvl(taltz_derm_eval_claim_volume_6_m,0)) as taltz_derm_eval_claim_volume_6_m
+,sum(nvl(taltz_rheum_eval_claim_volume_6_m,0)) as taltz_rheum_eval_claim_volume_6_m
+,sum(nvl(taltz_derm_bio_naive_rate_6_m,0)) as taltz_derm_bio_naive_rate_6_m
+,sum(nvl(taltz_rheum_bio_naive_rate_6_m,0)) as taltz_rheum_bio_naive_rate_6_m
+--,sum(nvl(olumiant_aa_patient_volume_6_m,0)) as olumiant_aa_patient_volume_6_m
+,sum(nvl(taltz_derm_soa_engagement_6_m,0)) as taltz_derm_soa_engagement_6_m
+,sum(nvl(taltz_rheum_soa_engagement_6_m,0)) as taltz_rheum_soa_engagement_6_m
+,sum(nvl(taltz_derm_product_vae_opens_6_m,0)) as taltz_derm_product_vae_opens_6_m
+,sum(nvl(taltz_rheum_product_vae_opens_6_m,0)) as taltz_rheum_product_vae_opens_6_m
+,sum(nvl(taltz_derm_product_hq_opens_6_m,0)) as taltz_derm_product_hq_opens_6_m
+,sum(nvl(taltz_rheum_product_hq_opens_6_m,0)) as taltz_rheum_product_hq_opens_6_m
+--,sum(nvl(olumiant_aa_product_vae_engagements_6_w,0)) as olumiant_aa_product_vae_engagements_6_w
+--,sum(nvl(olumiant_aa_product_hq_opens_6_m,0)) as olumiant_aa_product_hq_opens_6_m
+--,sum(nvl(olumiant_fm_product_soa_engagement_6_m,0)) as olumiant_fm_product_soa_engagement_6_m
+--,sum(nvl(taltz_fm_market_nbrx_13_w,0)) as taltz_fm_market_nbrx_13_w
+--,sum(nvl(olumiant_broad_market_nbrx_r13_w,0)) as olumiant_broad_market_nbrx_r13_w
+--,sum(nvl(taltz_fm_market_trx_12_m,0)) as taltz_fm_market_trx_12_m
+,sum(nvl(taltz_derm_market_nbrx_6_m,0)) as taltz_derm_market_nbrx_6_m
+,sum(nvl(taltz_rheum_market_nbrx_6_m,0)) as taltz_rheum_market_nbrx_6_m
+--,sum(nvl(olumiant_broad_market_trx_12_m,0)) as olumiant_broad_market_trx_12_m
+--,sum(nvl(olumiant_aa_market_nbrx_6_m,0)) as olumiant_aa_market_nbrx_6_m
+--,sum(nvl(taltz_fm_nbrx_r13_w,0)) as taltz_fm_nbrx_r13_w
+--,sum(nvl(olumiant_broad_nbrx_13_w,0)) as olumiant_broad_nbrx_13_w
+,sum(nvl(taltz_fm_product_nbrx_6_m,0)) as taltz_fm_product_nbrx_6_m
+,sum(nvl(taltz_fm_bimekizumab_nbrx_6_m,0)) as taltz_fm_bimekizumab_nbrx_6_m
+,sum(nvl(taltz_rheum_humira_nbrx_6_m,0)) as taltz_rheum_humira_nbrx_6_m
+,sum(nvl(taltz_rheum_rinvoq_nbrx_6_m,0)) as taltz_rheum_rinvoq_nbrx_6_m
+--,sum(nvl(olumiant_aa_product_nbrx_6_m,0)) as olumiant_aa_product_nbrx_6_m
+,sum(nvl(taltz_fm_tremfya_nbrx_6_m,0)) as taltz_fm_tremfya_nbrx_6_m
+,sum(nvl(taltz_fm_skyrizi_nbrx_6_m,0)) as taltz_fm_skyrizi_nbrx_6_m
+,sum(nvl(taltz_fm_cosentyx_nbrx_6_m,0)) as taltz_fm_cosentyx_nbrx_6_m
+,sum(nvl(jar_product_market_nbrx_13_w,0)) as jar_product_market_nbrx_13_w
+,sum(nvl(jar_market_nts_13_w,0)) as jar_market_nts_13_w
+,sum(nvl(jar_sglt2_nbrx_som_4w,0)) as jar_sglt2_nbrx_som_4w
+,sum(nvl(jar_sglt2_market_trx_13_w,0)) as jar_sglt2_market_trx_13_w
+,sum(nvl(jar_sglt2_market_nbrx_13_w,0)) as jar_sglt2_market_nbrx_13_w
+,sum(nvl(jar_sglt2_market_nts_13_w,0)) as jar_sglt2_market_nts_13_w
+,sum(nvl(mnj_glp1_market_nbrx_6_m,0)) as mnj_glp1_market_nbrx_6_m
+,sum(nvl(mnj_glp1_market_nts_4_w,0)) as mnj_glp1_market_nts_4_w
+,sum(nvl(mjr_glp1_market_trx_13_w,0)) as mjr_glp1_market_trx_13_w
+,sum(nvl(mjr_glp1_market_nbrx_13_w,0)) as mjr_glp1_market_nbrx_13_w
+,sum(nvl(mjr_glp1_market_nts_13_w,0)) as mjr_glp1_market_nts_13_w
+,sum(nvl(mjr_glp1_market_nbrx_som_13_w,0)) as mjr_glp1_market_nbrx_som_13_w
+,sum(nvl(mnj_glp1_product_nbrx_6_m,0)) as mnj_glp1_product_nbrx_6_m
+,sum(nvl(zep_cwm_inj_aom_nbrx_som_13w,0)) as zep_cwm_inj_aom_nbrx_som_13w
+,sum(nvl(zep_cwm_market_nrbx_6_m,0)) as zep_cwm_market_nrbx_6_m
+,sum(nvl(zep_injaom_market_trx_13_w,0)) as zep_injaom_market_trx_13_w
+,sum(nvl(zep_injaom_market_nbrx_13_w,0)) as zep_injaom_market_nbrx_13_w
+,sum(nvl(zep_injaom_market_nts_13_w,0)) as zep_injaom_market_nts_13_w
+,sum(nvl(zep_injaom_market_nbrx_som_13_w,0)) as zep_injaom_market_nbrx_som_13_w
+,sum(nvl(ZEP_CWM_MARKET_NRBX_4_W,0)) as ZEP_CWM_MARKET_NRBX_4_W
+,sum(nvl(ZEP_LD_TRX_4W,0)) as ZEP_LD_TRX_4W
+,sum(nvl(ZEP_MD_TRX_4W,0)) as ZEP_MD_TRX_4W
+,sum(nvl(ZEP_HD_TRX_4W,0)) as ZEP_HD_TRX_4W
+--,sum(nvl(ebglyss_ad_market_trx_13_w,0)) as ebglyss_ad_market_trx_13_w
+--,sum(nvl(ebglyss_ad_market_nbrx_13_w,0)) as ebglyss_ad_market_nbrx_13_w
+,sum(nvl(EBGLYSS_AD_MARKET_R4W_TRX_13_W,0)) as EBGLYSS_AD_MARKET_R4W_TRX_13_W
+,sum(nvl(EBGLYSS_AD_MARKET_R4W_NBRX_13_W,0)) as EBGLYSS_AD_MARKET_R4W_NBRX_13_W
+,sum(nvl(EBGLYSS_AD_MARKET_R13W_NBRX_13_W,0)) as EBGLYSS_AD_MARKET_R13W_NBRX_13_W
+,sum(nvl(TALTZ_DERM_MARKET_R4W_TRX_13_W,0)) as TALTZ_DERM_MARKET_R4W_TRX_13_W
+,sum(nvl(TALTZ_DERM_MARKET_R4W_NBRX_13_W,0)) as TALTZ_DERM_MARKET_R4W_NBRX_13_W
+,sum(nvl(TALTZ_DERM_MARKET_R13W_NBRX_13_W,0)) as TALTZ_DERM_MARKET_R13W_NBRX_13_W
+,sum(nvl(TALTZ_RHEUM_MARKET_R4W_TRX_13_W,0)) as TALTZ_RHEUM_MARKET_R4W_TRX_13_W
+,sum(nvl(TALTZ_RHEUM_MARKET_R4W_NBRX_13_W,0)) as TALTZ_RHEUM_MARKET_R4W_NBRX_13_W
+,sum(nvl(TALTZ_RHEUM_MARKET_R13W_NBRX_13_W,0)) as TALTZ_RHEUM_MARKET_R13W_NBRX_13_W
+,sum(nvl(ebglyss_ad_nbrx_13_w,0)) as ebglyss_ad_nbrx_13_w
+--,sum(nvl(om_ibd_iv_r4w_trx_13_w,0)) as om_ibd_iv_r4w_trx_13_w
+--,sum(nvl(om_ibd_iv_r4w_nbrx_13_w,0)) as om_ibd_iv_r4w_nbrx_13_w
+--,sum(nvl(om_ibd_sub_r4w_trx_13_w,0)) as om_ibd_sub_r4w_trx_13_w
+--,sum(nvl(om_ibd_sub_r4w_nbrx_13_w,0)) as om_ibd_sub_r4w_nbrx_13_w
+,sum(nvl(vz_breast_market_trx_r4w_13_w,0)) as vz_breast_market_trx_r4w_13_w
+,sum(nvl(vz_breast_market_nbrx_r4w_13_w,0)) as vz_breast_market_nbrx_r4w_13_w
+,sum(nvl(jay_mcl_cll_market_trx_r13w_13_w,0)) as jay_mcl_cll_market_trx_r13w_13_w
+,sum(nvl(jay_mcl_cll_market_nbrx_r13w_13_w,0)) as jay_mcl_cll_market_nbrx_r13w_13_w
+,sum(nvl(jay_cll_nbrx_volume_12_m,0)) as jay_cll_nbrx_volume_12_m
+,sum(nvl(jay_mcl_cll_som_volume_12,0)) as jay_mcl_cll_som_volume_12
+,sum(nvl(jay_mcl_nbrx_volume_12_m,0)) as jay_mcl_nbrx_volume_12_m
+,sum(nvl(jay_cll_mcl_nbrx_volume_12_m,0)) as jay_cll_mcl_nbrx_volume_12_m
+,sum(nvl(jay_cll_nbrx_jaypirca_volume_12_m,0)) as jay_cll_nbrx_jaypirca_volume_12_m
+,sum(nvl(vz_ebc_nbrx_volume_12_m,0)) as vz_ebc_nbrx_volume_12_m
+,sum(nvl(vz_mbc_nbrx_volume_12_m,0)) as vz_mbc_nbrx_volume_12_m
+,sum(nvl(ALZ_ATT_TRX_13_W,0)) as ALZ_ATT_TRX_13_W
+,sum(nvl(ALZ_ATT_NBRX_13_W,0)) as ALZ_ATT_NBRX_13_W
+,sum(nvl(ALZ_ATT_TRX_4_W,0)) as ALZ_ATT_TRX_4_W
+,sum(nvl(ALZ_ATT_NBRX_4_W,0)) as ALZ_ATT_NBRX_4_W
+,sum(nvl(ALZ_ATT_NBRX_M,0)) as ALZ_ATT_NBRX_M
+,sum(nvl(ALZ_ATT_TRX_M,0)) as ALZ_ATT_TRX_M
+,sum(nvl(ALZ_AD_TRX_13_W,0)) as ALZ_AD_TRX_13_W
+,sum(nvl(ALZ_AD_TRX_4_W,0)) as ALZ_AD_TRX_4_W
+,sum(nvl(ALZ_COMBINED_TRX_13_W,0)) as ALZ_COMBINED_TRX_13_W
+,sum(nvl(ALZ_COMBINED_TRX_4_W,0)) as ALZ_COMBINED_TRX_4_W
+,sum(nvl(OM_IBD_R4W_TRX_13_W,0)) as OM_IBD_R4W_TRX_13_W
+,sum(nvl(OM_IBD_1W_TRX_13_W,0)) as OM_IBD_1W_TRX_13_W
+,sum(nvl(OM_IBD_SC_R4W_NBRX_13_W,0)) as OM_IBD_SC_R4W_NBRX_13_W
+,sum(nvl(OM_IBD_IV_R4W_NBRX_13_W,0)) as OM_IBD_IV_R4W_NBRX_13_W
+,sum(nvl(OM_UC_R4W_TRX_13_W,0)) as OM_UC_R4W_TRX_13_W
+,sum(nvl(OM_CD_R4W_TRX_13_W,0)) as OM_CD_R4W_TRX_13_W
+from src",NA,NA,Not Applicable
+82,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select * from src
+where (upper(trim(load_strategy)) like '%ADD%' 
+or upper(trim(load_strategy)) like '%UPDATE%') and insight_priority_score is null)o",NA,NA,DTT THURSDAY| NULL | Insight_priority_score is NULL| IMPACT : The post_processing Thursday output contains some unprioritized insights. Please check the post_processing mapping and source datasets to ensure accuracy.
+83,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/NEW_INSIGHTS_CURRENT_WEEK/,NEW_INSIGHTS_CURRENT_WEEK,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select guid,count(*) as cnt from src
+group by guid)x
+where cnt>1
+
+",NA,NA,DTT THURSDAY| GRAIN_CHECK | The thursday post processing file contains duplicate records at its grain.| IMPACT : The further processing in DTT consuming this file will also be impacted. And eventually the insights job may fail due to insight_id duplication. Please check the respective mapping and source dataset to ensure accuracy.

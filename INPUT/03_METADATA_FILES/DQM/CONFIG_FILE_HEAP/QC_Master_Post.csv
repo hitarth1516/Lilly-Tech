@@ -1,0 +1,244 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/HEAP/LIST_VIEW_ENG/,list_view_eng,",",csv,`Clicked Anything Text`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from list_view_eng
+where `Clicked Anything Text` like '%|%'",NA,NA,The raw list_view_eng file has hcp_name with pipe delimiter
+2,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/HEAP/LIST_VIEW_ENG/,list_view_eng,",",csv,`Email`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select (tcount - ecount - 1) as check1
+    from
+    (
+        select count(*) as ecount
+        from list_view_eng
+        where `Email` like '%@veeva.lly'
+    ) x
+    cross join
+    (
+        select count(*) as tcount
+        from list_view_eng
+    ) y",NA,NA,The raw list_view_eng file has records with incorrect username
+3,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/HEAP/CALL_PLANNING/,call_planning,",",csv,`Email`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select (tcount - ecount - 1) as check2
+    from
+    (
+        select count(*) as ecount 
+        from call_planning
+		where `Email` like '%@veeva.lly'
+    ) x
+    cross join 
+    (
+        select count(*) as tcount 
+        from call_planning
+    ) y",NA,NA,The raw call_planning file has records with incorrect format
+4,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/HEAP/SEARCH_USAGE/,search_usage,",",csv,`Email`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select (tcount - ecount - 1) as check2
+    from
+    (
+        select count(*) as ecount 
+        from search_usage
+      where `Email` like '%@veeva.lly'
+    ) x
+    cross join 
+    (
+        select count(*) as tcount 
+        from search_usage
+    ) y",NA,NA,The raw search_usage file has records with incorrect format
+5,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/HEAP/PAGE_VISITED/,page_visited,",",csv,`Email`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select (tcount - ecount - 1) as check2
+    from
+    (
+        select count(*) as ecount 
+        from page_visited
+		where `Email` like '%@veeva.lly'
+    ) x
+    cross join 
+    (
+        select count(*) as tcount 
+        from page_visited
+    ) y",NA,NA,The raw page_visited file has records with incorrect format
+6,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/HEAP/HCP_PROFILE_VISIT/,hcp_profile_visit,",",csv,`Email`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select (tcount - ecount - 1) as check2
+    from
+    (
+        select count(*) as ecount 
+        from hcp_profile_visit
+		where `Email` like '%@veeva.lly'
+    ) x
+    cross join 
+    (
+        select count(*) as tcount 
+        from hcp_profile_visit
+    ) y",NA,NA,The raw hcp_profile_visit file has records with incorrect format
+7,Post,US_HEAP_PRE,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/FRONTEND_EXTRACT_DATA/APP_USAGE/,app_usage,",",csv,username,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from app_usage
+where username NOT LIKE '%veeva.lly'",NA,NA,The raw app_usage has records with incorrect username
+8,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_HCP_SESSION_DATE_LEVEL_DATA/current_date/,UHSD,|,csv,hcp_name,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from UHSD
+where hcp_name like '%|%'",NA,NA,The UHSD file has hcp_name with pipe delimiter
+9,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_DATE_LEVEL_DATA/current_date/,UD,|,csv,date,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select
+  count(*)
+from
+UD where 
+`date` <> date_format(to_date('${env.PREVIOUS_PO_START_DATE}'),'yyyyMMdd') 
+and data_element_name = 'TIME_SPENT_ON_FIRST_DAY_OF_CYCLE'",NA,NA,Time Spent on First Day Of Cycle contains doenot contain data for the previous po start date only
+10,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_SESSION_DATE_LEVEL_DATA/current_date/,UPSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select sum(cn1) as check2 from
+(
+select count(*) as cn1 from UPSD
+where user_email_id NOT LIKE '%veeva.lly'
+  union
+  select count(*) as cn1 from UPD
+where user_email_id NOT LIKE '%veeva.lly'
+  union
+  select count(*) as cn1 from UHSD
+where user_email_id NOT LIKE '%veeva.lly'
+  union
+  select count(*) as cn1 from UD
+where user_email_id NOT LIKE '%veeva.lly'
+)it1",NA,NA,The username is not in the desired format
+11,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_DATE_LEVEL_DATA/current_date/,UD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT 
+    CASE
+        WHEN COUNT(DISTINCT data_element_name) = 4
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM UD
+                 WHERE data_element_name NOT IN (
+                     'PERCENTAGE_CUSTOMER_INSIGHT_PAGE_USAGE',
+                     'ACTIVE_SESSION',
+                     'INSIGHT_READ_HCP_COUNT',
+                     'TIME_SPENT_ON_FIRST_DAY_OF_CYCLE'
+                 )
+             )
+        THEN 0
+        ELSE 1
+    END AS flag_missing
+FROM UD",NA,NA,The UD extract doesnot contain all the metrics to be reported
+12,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_SESSION_DATE_LEVEL_DATA/current_date/,UPSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT 
+    CASE
+        WHEN COUNT(DISTINCT data_element_name) = 2
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM UPSD
+                 WHERE data_element_name NOT IN (
+                     'SEARCH_USAGE', 
+                     'PAGE_VISITED_BY_SESSION'
+                 )
+             )
+        THEN 0
+        ELSE 1
+    END AS flag_missing
+FROM UPSD",NA,NA,The UPSD extract doesnot contain all the metrics to be reported
+13,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_HCP_SESSION_DATE_LEVEL_DATA/current_date/,UHSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT 
+    CASE
+        WHEN COUNT(DISTINCT data_element_name) > 3
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM UHSD
+                 WHERE data_element_name NOT IN (
+                     'HCP DISMISSAL', 
+                     'LIST_VIEW_ENGAGEMENTS'
+                 )
+                 AND data_element_name NOT LIKE 'INSIGHT_FEEDBACK_NOT_HELPFUL%'
+                 AND data_element_name NOT LIKE 'INSIGHT_FEEDBACK_HELPFUL%'
+             )
+        THEN 0
+        ELSE 1
+    END AS flag_missing
+FROM UHSD",NA,NA,The UHSD extract doesnot contain all the metrics to be reported
+14,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_DATE_LEVEL_DATA/current_date/,UPD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT 
+    CASE
+        WHEN COUNT(DISTINCT data_element_name) = 5 
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM UPD
+                 WHERE data_element_name NOT IN (
+                     'HCP_PROFILE_VISIT', 
+                     'CALL_PLANNING_NAVIGATION', 
+                     'SESSION_COUNT', 
+                     'PAGE_ENGAGEMENT_TIME', 
+                     'REP_SCREEN_VISIT_ORDER'
+                 )
+             )
+        THEN 0
+        ELSE 1
+    END AS flag_missing
+FROM UPD",NA,NA,The UPD extract doesnot contain all the metrics to be reported
+15,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_SESSION_DATE_LEVEL_DATA/current_date/,UPSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) as cn
+from UPSD
+where
+user_email_id IS NULL OR
+page_visited IS NULL OR 
+session_id IS NULL OR
+time_grain IS NULL OR
+`date` IS NULL OR
+data_element_name IS NULL OR
+data_element_value IS NULL OR
+data_element_value_format IS NULL",NA,NA,The UPSD Extract contains null values
+16,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_HCP_SESSION_DATE_LEVEL_DATA/current_date/,UHSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) as cn
+from UHSD
+where
+user_email_id IS NULL OR
+hcp_name IS NULL OR
+hcp_id IS NULL OR
+session_id IS NULL OR
+time_grain IS NULL OR
+`date` IS NULL OR
+data_element_name IS NULL OR
+data_element_value IS NULL OR
+data_element_value_format IS NULL",NA,NA,The UHSD Extract contains null values
+17,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_DATE_LEVEL_DATA/current_date/,UPD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) as cn
+from UPD
+where
+user_email_id IS NULL OR
+page_visited IS NULL OR
+time_grain IS NULL OR
+`date` IS NULL OR
+data_element_name IS NULL OR
+data_element_value IS NULL OR
+data_element_value_format IS NULL",NA,NA,The UPD Extract contains null values
+18,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_DATE_LEVEL_DATA/current_date/,UD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) as cn
+from UD
+where
+user_email_id IS NULL OR
+time_grain IS NULL OR
+`date` IS NULL OR
+data_element_name IS NULL OR
+data_element_value_format IS NULL",NA,NA,The UD Extract contains null values
+19,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_SESSION_DATE_LEVEL_DATA/current_date/,UPSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(cn) as check1 from(
+select count(1) as cn
+from UPSD
+group by
+user_email_id,
+page_visited,
+session_id,
+time_grain,
+`date`,
+data_element_name,
+data_element_value,
+data_element_value_format
+having cn>1)it1",NA,NA,The UPSD extract is not unique on user page session date grain
+20,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_HCP_SESSION_DATE_LEVEL_DATA/current_date/,UHSD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(cn) as check1 from(
+select count(*) as cn
+from UHSD
+group by
+user_email_id,
+hcp_name,
+hcp_id,
+session_id,
+time_grain,
+UHSD.`date`,
+data_element_name,
+data_element_value,
+data_element_value_format
+having cn>1)it1",NA,NA,The UHSD extract is not unique on user hcp session date grain
+21,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_PAGE_DATE_LEVEL_DATA/current_date/,UPD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(cn) as check1 from(
+select count(1) as cn
+from UPD
+group by
+user_email_id,
+page_visited,
+time_grain,
+`date`,
+data_element_name,
+data_element_value,
+data_element_value_format
+having cn>1)it1",NA,NA,The UPD extract is not unique on user page date grain
+22,Post,US_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/HEAP_EXTRACTS/CSV_TYPE/USER_DATE_LEVEL_DATA/current_date/,UD,|,csv,user_email_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(cn) as check1 from(
+select count(1) as cn
+from UD
+group by
+user_email_id,
+time_grain,
+`date`,
+data_element_name,
+data_element_value_format
+having cn>1)it1",NA,NA,The UD extract is not unique on user date grain

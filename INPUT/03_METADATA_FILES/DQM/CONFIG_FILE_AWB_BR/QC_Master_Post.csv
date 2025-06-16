@@ -1,0 +1,774 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+IMM_1,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a.salesforce_id as Sleeve_Name, 
+	cp.Total_HCPs as Total_HCPs_Prev, 
+	cp.Total_Reps as Total_Reps_Prev, 
+	ap.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg_Prev, 
+	ap.Reps_Receiving_Sugg as Reps_Receiving_Sugg_Prev, 
+	ap.Total_Sugg as Total_Sugg_Prev,
+	c.Total_HCPs as Total_HCPs, 
+	c.Total_Reps as Total_Reps, 
+	a.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg, 
+	a.Reps_Receiving_Sugg as Reps_Receiving_Sugg, 
+	a.Total_Sugg as Total_Sugg
+ 
+from
+ 
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+	and rep_id is not null
+	and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+ 
+)a
+left join
+ 
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) c
+on a.salesforce_id = c.salesforce_id
+ 
+left join
+ 
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg_prev
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+	and rep_id is not null
+	and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+ 
+)ap
+on a.salesforce_id = ap.salesforce_id
+ 
+left join
+ 
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment_prev
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) cp
+on a.salesforce_id = cp.salesforce_id",NA,NA,Not Applicable
+IMM_2,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.DERM_1_hcp_count_prev,0) as DERM_1_hcp_count_prev,
+	nvl(g.DERM_2_hcp_count_prev,0) as DERM_2_hcp_count_prev,
+	nvl(h.RHEUM_1_hcp_count_prev,0) as RHEUM_1_hcp_count_prev,
+	nvl(i.RHEUM_2_hcp_count_prev,0) as RHEUM_2_hcp_count_prev,
+	nvl(j.DERM_RHEUM_HYB_hcp_count_prev,0) as DERM_RHEUM_HYB_hcp_count_prev,
+	nvl(a.DERM_1_hcp_count,0) as DERM_1_hcp_count,
+	nvl(b.DERM_2_hcp_count,0) as DERM_2_hcp_count,
+	nvl(c.RHEUM_1_hcp_count,0) as RHEUM_1_hcp_count,
+	nvl(d.RHEUM_2_hcp_count,0) as RHEUM_2_hcp_count,
+	nvl(e.DERM_RHEUM_HYB_hcp_count,0) as DERM_RHEUM_HYB_hcp_count, 
+	(((nvl(a.DERM_1_hcp_count, 0) + nvl(b.DERM_2_hcp_count, 0) + nvl(c.RHEUM_1_hcp_count, 0) + nvl(d.RHEUM_2_hcp_count, 0) + nvl(e.DERM_RHEUM_HYB_hcp_count, 0))-(nvl(f.DERM_1_hcp_count_prev, 0) + nvl(g.DERM_2_hcp_count_prev, 0) + nvl(h.RHEUM_1_hcp_count_prev, 0) + nvl(i.RHEUM_2_hcp_count_prev, 0) + nvl(j.DERM_RHEUM_HYB_hcp_count_prev, 0))) /	(nvl(f.DERM_1_hcp_count_prev, 0) + nvl(g.DERM_2_hcp_count_prev, 0) + nvl(h.RHEUM_1_hcp_count_prev, 0) + nvl(i.RHEUM_2_hcp_count_prev, 0) + nvl(j.DERM_RHEUM_HYB_hcp_count_prev, 0)))*100 as percentage_change
+
+from(
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%PSO%' OR
+UPPER(sugg_name) like '%PSA%' OR
+UPPER(sugg_name) like '%OLUMIANT%' OR
+UPPER(sugg_name) like '%EBGLYSS%' 
+) m
+
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as DERM_1_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as DERM_2_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as RHEUM_1_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as RHEUM_2_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) i on trim(m.sugg_name)=trim(i.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as DERM_RHEUM_HYB_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_RHEUM_HYB' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) j on trim(m.sugg_name)=trim(j.sugg_name)
+
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as DERM_1_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as DERM_2_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as RHEUM_1_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as RHEUM_2_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) d on trim(m.sugg_name)=trim(d.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as DERM_RHEUM_HYB_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_RHEUM_HYB' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) e on trim(m.sugg_name)=trim(e.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+IMM_3,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.DERM_1_sugg_count_prev,0) as DERM_1_sugg_count_prev,
+	nvl(g.DERM_2_sugg_count_prev,0) as DERM_2_sugg_count_prev,
+	nvl(h.RHEUM_1_sugg_count_prev,0) as RHEUM_1_sugg_count_prev,
+	nvl(i.RHEUM_2_sugg_count_prev,0) as RHEUM_2_sugg_count_prev,
+	nvl(j.DERM_RHEUM_HYB_sugg_count_prev,0) as DERM_RHEUM_HYB_sugg_count_prev,
+	nvl(a.DERM_1_sugg_count,0) as DERM_1_sugg_count,
+	nvl(b.DERM_2_sugg_count,0) as DERM_2_sugg_count,
+	nvl(c.RHEUM_1_sugg_count,0) as RHEUM_1_sugg_count,
+	nvl(d.RHEUM_2_sugg_count,0) as RHEUM_2_sugg_count,
+	nvl(e.DERM_RHEUM_HYB_sugg_count,0) as DERM_RHEUM_HYB_sugg_count, 
+	(((nvl(a.DERM_1_sugg_count, 0) + nvl(b.DERM_2_sugg_count, 0) + nvl(c.RHEUM_1_sugg_count, 0) + nvl(d.RHEUM_2_sugg_count, 0) + nvl(e.DERM_RHEUM_HYB_sugg_count, 0))-(nvl(f.DERM_1_sugg_count_prev, 0) + nvl(g.DERM_2_sugg_count_prev, 0) + nvl(h.RHEUM_1_sugg_count_prev, 0) + nvl(i.RHEUM_2_sugg_count_prev, 0) + nvl(j.DERM_RHEUM_HYB_sugg_count_prev, 0)))/(nvl(f.DERM_1_sugg_count_prev, 0) + nvl(g.DERM_2_sugg_count_prev, 0) + nvl(h.RHEUM_1_sugg_count_prev, 0) + nvl(i.RHEUM_2_sugg_count_prev, 0) + nvl(j.DERM_RHEUM_HYB_sugg_count_prev, 0)))*100 as percentage_change
+	from(
+
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%PSO%' OR
+UPPER(sugg_name) like '%PSA%' OR
+UPPER(sugg_name) like '%OLUMIANT%' OR
+UPPER(sugg_name) like '%EBGLYSS%' 
+) m
+---prev counts--
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as DERM_1_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as DERM_2_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as RHEUM_1_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as RHEUM_2_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) i on trim(m.sugg_name)=trim(i.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as DERM_RHEUM_HYB_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_RHEUM_HYB' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) j on trim(m.sugg_name)=trim(j.sugg_name)
+
+---current counts--
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as DERM_1_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as DERM_2_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as RHEUM_1_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as RHEUM_2_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) d on trim(m.sugg_name)=trim(d.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as DERM_RHEUM_HYB_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_RHEUM_HYB' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) e on trim(m.sugg_name)=trim(e.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+CMH_1,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a.salesforce_id as Sleeve_Name, 
+	cp.Total_HCPs as Total_HCPs_Prev, 
+	cp.Total_Reps as Total_Reps_Prev, 
+	ap.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg_Prev, 
+	ap.Reps_Receiving_Sugg as Reps_Receiving_Sugg_Prev, 
+	ap.Total_Sugg as Total_Sugg_Prev,
+	c.Total_HCPs as Total_HCPs, 
+	c.Total_Reps as Total_Reps, 
+	a.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg, 
+	a.Reps_Receiving_Sugg as Reps_Receiving_Sugg, 
+	a.Total_Sugg as Total_Sugg 
+
+from 
+
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where business_unit_id = 'US_LDO' 
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+
+)a
+left join 
+
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where business_unit_id = 'US_LDO'
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) c
+on a.salesforce_id = c.salesforce_id
+
+left join
+
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg_prev
+	where business_unit_id = 'US_LDO' 
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+
+)ap
+on a.salesforce_id = ap.salesforce_id
+
+left join
+
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment_prev
+	where business_unit_id = 'US_LDO'
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) cp
+on a.salesforce_id = cp.salesforce_id",NA,NA,Not Applicable
+CMH_2,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.CMH_TERR_1_hcp_count_prev,0) as CMH_TERR_1_hcp_count_prev,
+	nvl(g.CMH_TERR_2_hcp_count_prev,0) as CMH_TERR_2_hcp_count_prev,
+	nvl(h.CMH_UNAD_TERR_hcp_count_prev,0) as CMH_UNAD_TERR_hcp_count_prev,
+	nvl(a.CMH_TERR_1_hcp_count,0) as CMH_TERR_1_hcp_count,
+	nvl(b.CMH_TERR_2_hcp_count,0) as CMH_TERR_2_hcp_count,
+	nvl(c.CMH_UNAD_TERR_hcp_count,0) as CMH_UNAD_TERR_hcp_count,
+	(((nvl(a.CMH_TERR_1_hcp_count, 0) + nvl(b.CMH_TERR_2_hcp_count, 0) + nvl(c.CMH_UNAD_TERR_hcp_count, 0) )-(nvl(f.CMH_TERR_1_hcp_count_prev, 0) + nvl(g.CMH_TERR_2_hcp_count_prev, 0) + nvl(h.CMH_UNAD_TERR_hcp_count_prev, 0) )) /	(nvl(f.CMH_TERR_1_hcp_count_prev, 0) + nvl(g.CMH_TERR_2_hcp_count_prev, 0) + nvl(h.CMH_UNAD_TERR_hcp_count_prev, 0)))*100 as percentage_change
+from(
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%JAR%' OR
+UPPER(sugg_name) like '%ZEP%' OR
+UPPER(sugg_name) like '%MNJ%' 
+) m
+
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_TERR_1_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_TERR_2_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_UNAD_TERR_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_UNAD_TERR' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_TERR_1_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_TERR_2_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_UNAD_TERR_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_UNAD_TERR' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+CMH_3,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.CMH_TERR_1_sugg_count_prev,0) as CMH_TERR_1_sugg_count_prev,
+	nvl(g.CMH_TERR_2_sugg_count_prev,0) as CMH_TERR_2_sugg_count_prev,
+	nvl(h.CMH_UNAD_TERR_sugg_count_prev,0) as CMH_UNAD_TERR_sugg_count_prev,
+	nvl(a.CMH_TERR_1_sugg_count,0) as CMH_TERR_1_sugg_count,
+	nvl(b.CMH_TERR_2_sugg_count,0) as CMH_TERR_2_sugg_count,
+	nvl(c.CMH_UNAD_TERR_sugg_count,0) as CMH_UNAD_TERR_sugg_count,
+  (((nvl(a.CMH_TERR_1_sugg_count, 0) + nvl(b.CMH_TERR_2_sugg_count, 0) + nvl(c.CMH_UNAD_TERR_sugg_count, 0) )-(nvl(f.CMH_TERR_1_sugg_count_prev, 0) + nvl(g.CMH_TERR_2_sugg_count_prev, 0) + nvl(h.CMH_UNAD_TERR_sugg_count_prev, 0) )) /	(nvl(f.CMH_TERR_1_sugg_count_prev, 0) + nvl(g.CMH_TERR_2_sugg_count_prev, 0) + nvl(h.CMH_UNAD_TERR_sugg_count_prev, 0) ))*100 as percentage_change
+from(
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%JAR%' OR
+UPPER(sugg_name) like '%ZEP%' OR
+UPPER(sugg_name) like '%MNJ%' 
+) m
+
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as CMH_TERR_1_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as CMH_TERR_2_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as CMH_UNAD_TERR_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_UNAD_TERR' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as CMH_TERR_1_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as CMH_TERR_2_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as CMH_UNAD_TERR_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_UNAD_TERR' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+OBU_1,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a.salesforce_id as Sleeve_Name, 
+	cp.Total_HCPs as Total_HCPs_Prev, 
+	cp.Total_Reps as Total_Reps_Prev, 
+	ap.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg_Prev, 
+	ap.Reps_Receiving_Sugg as Reps_Receiving_Sugg_Prev, 
+	ap.Total_Sugg as Total_Sugg_Prev,
+	c.Total_HCPs as Total_HCPs, 
+	c.Total_Reps as Total_Reps, 
+	a.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg, 
+	a.Reps_Receiving_Sugg as Reps_Receiving_Sugg, 
+	a.Total_Sugg as Total_Sugg 
+
+from 
+
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+
+)a
+left join 
+
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) c
+on a.salesforce_id = c.salesforce_id
+
+left join
+
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg_prev
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+
+)ap
+on a.salesforce_id = ap.salesforce_id
+
+left join
+
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment_prev
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) cp
+on a.salesforce_id = cp.salesforce_id",NA,NA,Not Applicable
+OBU_2,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.ONC_PORT_hcp_count_prev,0) as ONC_PORT_hcp_count_prev,
+	nvl(a.ONC_PORT_hcp_count,0) as ONC_PORT_hcp_count,
+	(((nvl(a.ONC_PORT_hcp_count, 0))-(nvl(f.ONC_PORT_hcp_count_prev, 0))) /	(nvl(f.ONC_PORT_hcp_count_prev, 0)))*100 as percentage_change
+
+from(
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%JAY_CLL%' OR
+UPPER(sugg_name) like '%JAY_MCL%' OR
+UPPER(sugg_name) like '%VER_EBC%' OR
+UPPER(sugg_name) like '%VER_MBC%'
+) m
+
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as ONC_PORT_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ONC_PORTFOLIO'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+
+
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as ONC_PORT_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ONC_PORTFOLIO'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+
+order by trim(sugg_name)",NA,NA,Not Applicable
+OBU_3,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.ONC_PORT_sugg_count_prev,0) as ONC_PORT_sugg_count_prev,
+	nvl(a.ONC_PORT_sugg_count,0) as ONC_PORT_sugg_count,
+	(((nvl(a.ONC_PORT_sugg_count, 0))-(nvl(f.ONC_PORT_sugg_count_prev, 0)))/(nvl(f.ONC_PORT_sugg_count_prev, 0)))*100 as percentage_change
+	from(
+
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%JAY_CLL%' OR
+UPPER(sugg_name) like '%JAY_MCL%' OR
+UPPER(sugg_name) like '%VER_EBC%' OR
+UPPER(sugg_name) like '%VER_MBC%' 
+) m
+---prev counts--
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as ONC_PORT_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ONC_PORTFOLIO'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+
+
+---current counts--
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as ONC_PORT_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ONC_PORTFOLIO'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+
+
+order by trim(sugg_name)",NA,NA,Not Applicable
+ALZ_1,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=2025-01-23/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a.salesforce_id as Sleeve_Name, 
+	cp.Total_HCPs as Total_HCPs_Prev, 
+	cp.Total_Reps as Total_Reps_Prev, 
+	ap.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg_Prev, 
+	ap.Reps_Receiving_Sugg as Reps_Receiving_Sugg_Prev, 
+	ap.Total_Sugg as Total_Sugg_Prev,
+	c.Total_HCPs as Total_HCPs, 
+	c.Total_Reps as Total_Reps, 
+	a.HCPs_Receiving_Sugg as HCPs_Receiving_Sugg, 
+	a.Reps_Receiving_Sugg as Reps_Receiving_Sugg, 
+	a.Total_Sugg as Total_Sugg 
+
+from 
+
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id in ('ALZ_ADC')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+
+)a
+left join 
+
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id in ('ALZ_ADC')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) c
+on a.salesforce_id = c.salesforce_id
+
+left join
+
+(
+	select 
+		salesforce_id,
+		count(distinct entities.`values`['customer'].id) as HCPs_Receiving_Sugg, 
+		count(distinct rep_id) as Reps_Receiving_Sugg, 
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg_prev
+	where salesforce_id in ('ALZ_ADC')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+
+)ap
+on a.salesforce_id = ap.salesforce_id
+
+left join
+
+(
+	select
+		salesforce_id, 
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment_prev
+	where salesforce_id in ('ALZ_ADC')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+) cp
+on a.salesforce_id = cp.salesforce_id",NA,NA,Not Applicable
+ALZ_2,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=2025-01-23/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.ALZ_ADC_hcp_count_prev,0) as ALZ_ADC_hcp_count_prev,
+	nvl(a.ALZ_ADC_hcp_count,0) as ALZ_ADC_hcp_count,
+	(((nvl(a.ALZ_ADC_hcp_count, 0))-(nvl(f.ALZ_ADC_hcp_count_prev, 0))) /	(nvl(f.ALZ_ADC_hcp_count_prev, 0)))*100 as percentage_change
+from(
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%ALZ_DT%' 
+) m
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as ALZ_ADC_hcp_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ALZ_ADC' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+ 
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as ALZ_ADC_hcp_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ALZ_ADC' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+ALZ_3,Post,US_BR_AWB_PRI_SUGG,04_ARCHIVAL/date=2025-01-23/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.ALZ_ADC_sugg_count_prev,0) as ALZ_ADC_sugg_count_prev,
+	nvl(a.ALZ_ADC_sugg_count,0) as ALZ_ADC_sugg_count,
+	(((nvl(a.ALZ_ADC_sugg_count, 0) )-(nvl(f.ALZ_ADC_sugg_count_prev, 0) ))/(nvl(f.ALZ_ADC_sugg_count_prev, 0) ))*100 as percentage_change
+	from(
+select distinct metric_sk,sugg_name,salesforce_id,suggestion_type from SUGG_MAP where
+UPPER(sugg_name) like '%ALZ_DT%' 
+) m
+---prev counts--
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as ALZ_ADC_sugg_count_prev
+from SUGG_MAP m
+left join pri_sugg_prev p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ALZ_ADC' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+ 
+---current counts--
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.guid ) as ALZ_ADC_sugg_count
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ALZ_ADC' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable

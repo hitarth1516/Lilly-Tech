@@ -1,0 +1,75 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_P2P,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/PTP_files/Dashboard_Data/,p2p_dd,|,parquet,bu,Custom_Query,Monday,Active,NA,NA,NA,prerequisite condition,"SELECT BU, 
+(SUM(attainment_flag)/SUM(recom_flag))*100 AS Attainment_Percentage,
+(SUM(reached_flag)/SUM(recom_flag))*100 AS Reach_Percentage,
+((SUM(CASE WHEN ptp_lov IN ('Missed','Optimal') THEN Total_act_calls ELSE 0 END) + 
+SUM(CASE WHEN ptp_lov='Sub-Optimal' THEN Total_calls ELSE 0 END)) / SUM(Total_calls)) * 100 AS Execution_Percentage,
+  ((SUM(CASE WHEN ptp_lov IN ('Missed','Optimal') THEN Act_calls_rev ELSE 0 END) +
+  SUM(CASE WHEN ptp_lov='Sub-Optimal' THEN calls_rev ELSE 0 END)) / SUM(calls_rev)) * 100 AS Percentage_to_Plan
+FROM p2p_dd
+WHERE BU IN (""CMH"", ""NBU"", ""OBU"", ""IMM"")
+GROUP BY BU;",,,Not Applicable
+2,Post,US_P2P,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/PTP_files/Dashboard_Data/,p2p_dd,|,parquet,bu,Custom_Query,Monday,Active,NA,NA,NA,prerequisite condition,"SELECT 'Total_Opportunity_Suggested_in_thousands' AS Metric,
+  SUM(IF(BU='CMH' AND recom_flag='1', calls_p1, 0))/1000 AS CMH,
+  SUM(IF(BU='NBU' AND recom_flag='1', calls_p1, 0))/1000 AS NBU,
+  SUM(IF(BU='OBU' AND recom_flag='1', calls_p1, 0))/1000 AS OBU,
+  SUM(IF(BU='IMM' AND recom_flag='1', calls_p1, 0))/1000 AS IMM
+FROM p2p_dd
+
+UNION ALL
+
+SELECT 'Revenue_in_Millions_From_Total_Opportunity_Suggested',
+  SUM(IF(BU='CMH', calls_p1_rev, 0))/1e6,
+  SUM(IF(BU='NBU', calls_p1_rev, 0))/1e6,
+  SUM(IF(BU='OBU', calls_p1_rev, 0))/1e6,
+  SUM(IF(BU='IMM', calls_p1_rev, 0))/1e6
+FROM p2p_dd
+
+UNION ALL
+
+SELECT 'Suggested_Opportunity_Executed_in_thousands',
+  (SUM(IF(BU='CMH' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='CMH' AND ptp_lov='Sub-Optimal', calls_p1, 0)))/1000,
+  (SUM(IF(BU='NBU' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='NBU' AND ptp_lov='Sub-Optimal', calls_p1, 0)))/1000,
+  (SUM(IF(BU='OBU' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='OBU' AND ptp_lov='Sub-Optimal', calls_p1, 0)))/1000,
+  (SUM(IF(BU='IMM' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='IMM' AND ptp_lov='Sub-Optimal', calls_p1, 0)))/1000
+FROM p2p_dd
+
+UNION ALL
+
+SELECT 'Revenue_in_Millions_From_Suggested_Opportunity_Executed',
+  (SUM(IF(BU='CMH' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1_rev, 0)) + SUM(IF(BU='CMH' AND ptp_lov='Sub-Optimal', calls_p1_rev, 0)))/1e6,
+  (SUM(IF(BU='NBU' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1_rev, 0)) + SUM(IF(BU='NBU' AND ptp_lov='Sub-Optimal', calls_p1_rev, 0)))/1e6,
+  (SUM(IF(BU='OBU' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1_rev, 0)) + SUM(IF(BU='OBU' AND ptp_lov='Sub-Optimal', calls_p1_rev, 0)))/1e6,
+  (SUM(IF(BU='IMM' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1_rev, 0)) + SUM(IF(BU='IMM' AND ptp_lov='Sub-Optimal', calls_p1_rev, 0)))/1e6
+FROM p2p_dd
+
+UNION ALL
+
+SELECT 'Total_Opportunity_Executed_in_thousands',
+  SUM(IF(BU='CMH' AND execution_flag='1', act_calls_p1, 0))/1000,
+  SUM(IF(BU='NBU' AND execution_flag='1', act_calls_p1, 0))/1000,
+  SUM(IF(BU='OBU' AND execution_flag='1', act_calls_p1, 0))/1000,
+  SUM(IF(BU='IMM' AND execution_flag='1', act_calls_p1, 0))/1000
+FROM p2p_dd
+
+UNION ALL
+
+SELECT 'Revenue_in_Millions_From_Total_Opportunity_Executed',
+  SUM(IF(BU='CMH' AND execution_flag='1', act_calls_p1_rev, 0))/1e6,
+  SUM(IF(BU='NBU' AND execution_flag='1', act_calls_p1_rev, 0))/1e6,
+  SUM(IF(BU='OBU' AND execution_flag='1', act_calls_p1_rev, 0))/1e6,
+  SUM(IF(BU='IMM' AND execution_flag='1', act_calls_p1_rev, 0))/1e6
+FROM p2p_dd
+
+UNION ALL
+
+SELECT 'Suggested_Opportunity_Not_Executed_in_thousands',
+  (SUM(IF(BU='CMH' AND recom_flag='1', calls_p1, 0)) - 
+   (SUM(IF(BU='CMH' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='CMH' AND ptp_lov='Sub-Optimal', calls_p1, 0))))/1000,
+  (SUM(IF(BU='NBU' AND recom_flag='1', calls_p1, 0)) - 
+   (SUM(IF(BU='NBU' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='NBU' AND ptp_lov='Sub-Optimal', calls_p1, 0))))/1000,
+  (SUM(IF(BU='OBU' AND recom_flag='1', calls_p1, 0)) - 
+   (SUM(IF(BU='OBU' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='OBU' AND ptp_lov='Sub-Optimal', calls_p1, 0))))/1000,
+  (SUM(IF(BU='IMM' AND recom_flag='1', calls_p1, 0)) - 
+   (SUM(IF(BU='IMM' AND ptp_lov IN ('Missed','Optimal'), act_calls_p1, 0)) + SUM(IF(BU='IMM' AND ptp_lov='Sub-Optimal', calls_p1, 0))))/1000
+FROM p2p_dd",,,Not Applicable

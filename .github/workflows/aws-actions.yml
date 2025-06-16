@@ -1,0 +1,181 @@
+name: Fetch Secrets from AWS Secrets Manager
+
+on:
+  push:
+    branches: [develop, qa, main]
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
+env:
+  aws-region: us-east-2
+  ea-version: v1.4.0
+  aws-session-name: buit-edb-dynamic-targeting
+  # aws-assume-role: IAMRoleForGithubOIDC_buit-omnichannel-dt
+  secret-name: aws-zs-s3-access-creds
+  # ARTIFACT_BUCKET: ${{secrets.ARTIFACT_BUCKET}}
+  DEV_DEPLOYMENT_ROLE: ${{ vars.DEPLOYMENT_ROLE_DEV }}
+  QA_DEPLOYMENT_ROLE: ${{ vars.DEPLOYMENT_ROLE_QA }}
+  PROD_DEPLOYMENT_ROLE: ${{ vars.DEPLOYMENT_ROLE_PROD }}
+  DEV_S3_BUCKET: ${{ vars.S3_BUCKET_DEV }}
+  QA_S3_BUCKET: ${{ vars.S3_BUCKET_QA }}
+  PROD_S3_BUCKET: ${{ vars.S3_BUCKET_PROD }}
+  DEV_ENV_PREFIX: DEV
+  QA_ENV_PREFIX: QA
+  PROD_ENV_PREFIX: PROD
+  
+
+jobs:
+  # This job replaces the external environment.yml workflow
+  ENV:
+    runs-on: ubuntu-latest
+    outputs:
+      Env: ${{ steps.set-env.outputs.environment }}
+    steps:
+      - name: Set environment based on branch
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/qa" ]]; then
+            echo "environment=qa" >> $GITHUB_OUTPUT
+          else
+            echo "environment=develop" >> $GITHUB_OUTPUT
+          fi
+
+  # This job replaces the external setup-python.yml workflow
+  SetupPython:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+  # This is a placeholder for the iris-vm.yml workflow
+  # You should replace this with your actual VM setup steps
+  VM:
+    runs-on: ubuntu-latest
+    steps:
+      - name: VM Setup Placeholder
+        run: echo "VM setup would go here - replace with actual VM setup steps"
+
+  fetch-secrets:
+    runs-on: ubuntu-latest
+    needs: [SetupPython]
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      access-key: ${{ steps.get-credentials.outputs.access-key }}
+      secret-key: ${{ steps.get-credentials.outputs.secret-key }}
+    steps:    
+      # Checkout your GitHub Repo with application code in
+      - name: Checkout Current Repo
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          # Only enable caching if package-lock.json exists
+          cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
+      - name: Set env BRANCH
+        run: echo "BRANCH=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_ENV 
+      - name: Print GITHUB_REF
+        run: echo "GITHUB_REF is $GITHUB_REF"
+      # Set environment variables based on branch
+      - name: Set env DEPLOYMENT_ENV, DEPLOYMENT_ROLE_ARN and S3_BUCKET
+        run: |
+          if [[ $BRANCH == 'master' || $BRANCH == 'main' ]]; then
+            echo "DEPLOYMENT_ENV=prod" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_ROLE_ARN=$PROD_DEPLOYMENT_ROLE" >> "$GITHUB_ENV"
+            echo "S3_BUCKET=$PROD_S3_BUCKET" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_PREFIX=$PROD_ENV_PREFIX" >> $GITHUB_ENV
+            echo "DEPLOYMENT_TAGS<<EOF" >> $GITHUB_ENV
+            echo $(<./tags.prod.json) >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          elif [[ $BRANCH == 'qa' ]]; then
+            echo "DEPLOYMENT_ENV=qa" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_ROLE_ARN=$QA_DEPLOYMENT_ROLE" >> "$GITHUB_ENV"
+            echo "S3_BUCKET=$QA_S3_BUCKET" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_PREFIX=$QA_ENV_PREFIX" >> $GITHUB_ENV
+            echo "DEPLOYMENT_TAGS<<EOF" >> $GITHUB_ENV
+            echo $(<./tags.qa.json) >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "DEPLOYMENT_ENV=dev" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_ROLE_ARN=$DEV_DEPLOYMENT_ROLE" >> "$GITHUB_ENV"
+            echo "S3_BUCKET=$DEV_S3_BUCKET" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_PREFIX=$DEV_ENV_PREFIX" >> $GITHUB_ENV
+            echo "DEPLOYMENT_TAGS<<EOF" >> $GITHUB_ENV
+            echo $(<./tags.dev.json) >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+      - name: Extract AWS Account ID
+        id: extract-account-id
+        run: echo "AWS_ACCOUNT_ID=$(echo ${{ env.DEPLOYMENT_ROLE_ARN }} | cut -d':' -f5)" >> $GITHUB_ENV
+      - name: Print Assumed Role ARN
+        run: echo "DEPLOYMENT_ROLE_ARN is $DEPLOYMENT_ROLE_ARN"
+      - name: Decode GitHub OIDC token payload
+        run: |
+          ID_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
+          echo "$ID_TOKEN" | cut -d '.' -f2 | base64 --decode | jq
+      - name: Request OIDC Token
+        id: request-oidc
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const token = await core.getIDToken();
+            core.exportVariable('ACTIONS_ID_TOKEN_REQUEST_TOKEN', token);
+      - name: Debug GitHub OIDC claims
+        run: |
+          echo "Requesting GitHub OIDC Token..."
+          curl -sLS -o id-token.json -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL"
+          echo "Decoded ID token claims:"
+          cat id-token.json | jq .
+      - name: Print GitHub OIDC token sub
+        run: |
+          echo "Requesting OIDC token..."
+          ID_TOKEN=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+          echo "sub claim:"
+          echo $ID_TOKEN | jq -r '.sub'
+      - name: Connect to EDB
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{env.aws-region}}
+          role-to-assume: ${{env.DEPLOYMENT_ROLE_ARN}}
+          role-session-name: ${{env.aws-session-name}}
+ 
+      - name: Retrieve credentials for ZS tdec bucket
+        id: get-credentials
+        run: |
+          ACCESS_KEY=$(aws secretsmanager get-secret-value --secret-id ${{ env.secret-name }} | jq -r '.SecretString | fromjson | .ACCESS_KEY' )
+          SECRET_KEY=$(aws secretsmanager get-secret-value --secret-id ${{ env.secret-name }} | jq -r '.SecretString | fromjson | .SECRET_KEY' )
+          # Update to new GitHub Actions output syntax
+          echo "access-key=${ACCESS_KEY}" >> $GITHUB_OUTPUT
+          echo "secret-key=${SECRET_KEY}" >> $GITHUB_OUTPUT
+
+      - name: Use the secrets for ZS tdec bucket
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ steps.get-credentials.outputs.access-key }}
+          aws-secret-access-key: ${{ steps.get-credentials.outputs.secret-key }}
+          aws-region: us-east-1
+
+      - name: Upload file to S3 for ZS tdec bucket
+        run: |
+          echo "Using DEPLOYMENT_PREFIX: ${{env.DEPLOYMENT_PREFIX}}"
+          echo "Using DEPLOYMENT_ROLE_ARN: ${{env.DEPLOYMENT_ROLE_ARN}}"
+          aws s3 cp INPUT/03_METADATA_FILES/ s3://aws-a0188-use1-00-d-s3b-lily-vdt-ext-lily-tdec01/in/Dynamic_Targeting/quarter/${{env.DEPLOYMENT_PREFIX}}/03_METADATA_FILES --recursive --acl private
+          aws s3 cp INPUT/config/ s3://aws-a0188-use1-00-d-s3b-lily-vdt-ext-lily-tdec01/in/Dynamic_Targeting/quarter/${{env.DEPLOYMENT_PREFIX}}/config --recursive --acl private

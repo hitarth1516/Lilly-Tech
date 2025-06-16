@@ -1,0 +1,419 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=customer/,hcp_master,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(1) from src tgt
+
+left join (
+select distinct trim(upper(customer_id)) as customer_id from ldg_zep_tgt
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_zep_osa_tgt
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_mnj_tgt
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_zep_hcp_attribute
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_mnj_hcp_attribute
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_obs_weekly_trigger
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_dbu_weekly_trigger
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_dbu_predictive_triggers
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_zepbound_trigger_payer_br
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_mounjaro_trigger_payer_br
+union
+select distinct trim(upper(customer_id)) as customer_id from ldg_taltz_hcp_attribute
+union
+select distinct trim(upper(customer_id)) as customer_id from LDG_LEBRI_HCP_ATTRIBUTES
+union 
+select distinct trim(upper(customer_id)) as customer_id from LDG_LEBRI_TRIGGERS_PAYER_BR_METRICS
+union 
+select distinct trim(upper(customer_id)) as customer_id from LDG_JAYPIRCA_HCP_ATTRIBUTES
+union 
+select distinct trim(upper(customer_id)) as customer_id from LDG_VERZENIO_HCP_ATTRIBUTES
+union
+select distinct trim(upper(customer_id)) as customer_id from LDG_TRIGGER_METRIC
+union
+select distinct trim(upper(customer_id)) as customer_id from LDG_AD_HCP_ATTRIBUTES
+union
+select distinct trim(upper(customer_id)) as customer_id from US_HCP_GA_ANALYTICS
+) src2
+
+on src2.customer_id = tgt.customer_id
+
+where src2.customer_id is null",NA,NA,BR :  HCP Master does not contain all HCPs from Attribute files||Error resolution tip : Check all Input attribute files and HCP masters for HCPs who are present in HCP master file but not in attribute files.
+2,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,guid,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+
+select value1 from
+
+(select distinct
+
+cast(concat(v2.config_value,'_',v.config_value,'_',m.attribute_value1) as string) as value1
+
+from (select * from m_prod_xref where BUSINESS_UNIT='US_LDO'
+
+and source_name='TEAM_RESP_CD' and active ='Y') m
+
+inner join
+
+(
+
+select salesforce_id,sleeve_name,business_unit_id,trim(brand_id) as brand_id from
+
+(
+
+select salesforce_id,sleeve_name,business_unit_id,
+
+split(brand_id,';') AS brnd_id from team_resp_code
+
+)t1
+
+LATERAL VIEW explode(brnd_id) id AS brand_id
+
+)t2 on concat(t2.salesforce_id,'_',t2.brand_id) = m.source_product_name and source_name='TEAM_RESP_CD'
+
+--and active = 'Y'
+
+inner join m_verso_cnfg v on v.config_type = t2.salesforce_id and v.PARAMETER_TYPE = 'RESP CODE MAPPING'
+
+inner join m_verso_cnfg v2 on v2.config_type = t2.business_unit_id and v2.parameter_type='BU MAPPING'
+
+and v2.attribute_value2=t2.salesforce_id
+
+)t3
+
+
+
+except
+
+
+
+select concat(business_unit_id,'_',salesforce_id,'_',product_id) as value2 from rep_alignment
+
+)a",NA,NA,"BR : BU-SF-product mapping is incorrect in alignment file||Error resolution tip : Check for the metadata files M_PROD_XREF, M_VERSO_CONFIG or code level changes in Rep_Alignment code"
+3,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=customer/,hcp_master,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+
+select count(*),customer_id from hcp_master group by customer_id having count(*)>1)a",NA,NA,BR : Customer File is not unique on customer_id||Error resolution tip : Check if there are duplicate entries in HCP_MASTER at Customer_Id level
+4,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=entities_attributes/,entity_attributes,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (*) from (
+
+select count(*),customer_id, product_id from entity_attributes group by customer_id, product_id having count(*)>1) a",NA,NA,"BR : Entity and Attributes File not unique on customer_id and product_id||Error resolution tip : Check for duplicate entries on Customer_id, Product_id level in Entity_attributes file."
+5,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (*) from(
+
+select count(*),customer_id, product_id, salesforce_id, rep_id,sugg_posted_date, business_unit_id from rep_alignment
+
+where rep_id is not null
+
+group by customer_id, product_id, salesforce_id, rep_id,sugg_posted_date, business_unit_id having count (*)>1) a",NA,NA,BR : Rep Alignment FIle is not unique on customer_id-product_id-rep_id-business_unit_id||Error resolution tip : Check for duplicate entries on customer_id-product_id-rep_id-business_unit_id level.
+6,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_based_metrics/,pp,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (*) from(
+
+select count(*),customer_id,product_id, rep_id from src group by customer_id,product_id, rep_id having count (*)>1) a",NA,NA,"BR : Rep based mterics File is not unique on customer_id : product_id : rep_id||Error resolution tip : Check Rep_based_metrics (PP metrics) file has duplicates at customer_id,Product_id and rep_id level."
+7,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=time_based_metrics/,npp,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (*) from(
+
+select count(*),customer_id,product_id, start_time, end_time, time_grain from src
+
+group by customer_id,product_id, start_time, end_time, time_grain having count (*)>1) a",NA,NA,"BR : Time based metrics File is not unique on customer_id : product_id : start_time : end_time||Error resolution tip : Check Time based metrics (NPP metrics) file for duplicates at customer_id, Product_Id, start_time, end_time."
+8,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (*) from(
+
+(select distinct customer_id from rep_alignment)
+
+except
+
+select distinct customer_id from
+
+(select a.customer_id from hcp_rep_terr a
+
+inner join
+
+(select customer_id, salesforce_code from sftu) b
+
+on UPPER(a.customer_id) = UPPER(b.customer_id)
+
+and UPPER(a.salesforce_id) = UPPER(b.salesforce_code)
+)t1)t2
+
+where 'current_date'='PO_START_DATE'",NA,NA,BR : Rep alignment file does not contain all HCPs from SFTU and HCP_Terr files||Error resolution tip : Check Rep_Alignment for missing HCPs who are present in SFTU and HCP_Terr files
+9,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from (
+select distinct concat(customer_id,'_',product_id,'_',territory_sk) from rep_alignment
+except
+select distinct concat(customer_id,'_',product_id,'_',territory_sk) from po_alignment
+) t 
+where 'current_date' != 'PO_START_DATE'",NA,NA,"BR : Additional HCP-Terr combinations found in non-PO refresh alignment file||Error resolution tip : Check for unique combinations of customer, product and territory"
+10,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (
+
+select distinct concat(customer_id,'_',product_id,'_',territory_sk) from po_alignment
+
+except
+
+select distinct concat(customer_id,'_',product_id,'_',territory_sk) from rep_alignment
+
+) t
+
+where 'current_date' != 'PO_START_DATE'",NA,NA,"BR : PO refresh HCP-Terr alignments are missing||Error resolution tip : Check for unique combinations of customer, product, and territory from the rep_alignment table, excluding excluding  customer, product and territory in rep_alignment."
+11,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*)
+
+from rep_alignment r right join
+
+(
+
+select a.customer_id,nvl(h.rep_id,'repid') as rep_id,a.territory_sk
+
+from hcp_rep_terr h
+
+right join
+
+(
+
+select distinct p.customer_id,p.territory_sk from po_alignment p
+
+inner join hcp_rep_terr h on h.customer_id = p.customer_id
+
+and h.rep_id = p.rep_id
+
+and h.territory_sk = p.territory_sk
+
+where h.rep_id is null
+
+)a on h.customer_id = a.customer_id
+
+and h.territory_sk = a.territory_sk
+
+)b
+
+on r.customer_id = b.customer_id
+
+and nvl(r.rep_id,'repid') = b.rep_id
+
+and r.territory_sk = b.territory_sk
+
+where r.rep_id is null and 'current_date'!='PO_START_DATE'",NA,NA,"BR : HCP-Terr pair does not contain updated rep||Error resolution tip : Check in HCP_TERR file if the HCP's and Territories came in exception are true, if it is reach out to Source Team"
+12,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from(
+select value1 from(
+select distinct concat(customer_id,'_',rep_id,'_',attribute_value1,'_',config_value,'_',territory_sk) value1 
+from(
+select distinct customer_id,rep_id,product_id,territory_sk,salesforce_id,m.attribute_value1,v.config_value
+from(
+select distinct hcp_terr.customer_id, sftu.product_id, hcp_terr.rep_id,territory_sk,salesforce_id, hcp_terr.terr_start_date
+FROM hcp_rep_terr hcp_terr
+inner join 
+(select  customer_id, product_id, salesforce_code FROM sftu) sftu    
+ON UPPER(TRIM(hcp_terr.customer_id)) = UPPER(TRIM(sftu.customer_id)) 
+AND UPPER(TRIM(hcp_terr.salesforce_id))=UPPER(TRIM(sftu.salesforce_code))) HTA
+inner join
+(
+select salesforce_code,sleeve_name,business_unit_id,trim(brand_id) as brand_id from
+(
+select salesforce_id AS salesforce_code,sleeve_name,business_unit_id,
+split(brand_id,';') AS brnd_id from team_resp_code
+)t1 
+LATERAL VIEW explode(brnd_id) id AS brand_id
+)t2 on UPPER(TRIM(t2.salesforce_code)) = UPPER(TRIM(HTA.SALESFORCE_ID)) AND UPPER(TRIM(t2.brand_id))=UPPER(TRIM(SUBSTR(HTA.PRODUCT_ID,1,9)))
+AND HTA.terr_start_date < cast(""PO_START_DATE"" AS date)
+inner join m_verso_cnfg v on v.config_type = t2.salesforce_code and v.PARAMETER_TYPE = 'RESP CODE MAPPING'
+inner join m_verso_cnfg v2 on v2.config_type = t2.business_unit_id and v2.parameter_type='BU MAPPING'
+inner join m_prod_xref m on concat(t2.salesforce_code,'_',t2.brand_id) = m.source_product_name 
+and source_name='TEAM_RESP_CD')
+t3)
+t4
+except
+select distinct concat(customer_id,'_',rep_id,'_',product_id,'_',salesforce_id,'_',territory_sk) as value2 from po_alignment
+)t5 where 'current_date' = 'PO_START_DATE'",NA,NA,"BR : PO refreshed alignment data is incorrect||Error resolution tip : Check which customer_id,rep_id,product_id,salesforce_id,territory_sk combination is present in mention code "
+13,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct a.customer_id) as Customer_count,count(distinct a.rep_id) as Rep_count,
+
+'HCPs and Reps from Rep_Alignment are not present in SFTU and HCT_TERR tables HCP, Rep.' as COMMENT from (
+
+select customer_id,rep_id from src
+
+group by  customer_id,rep_id,salesforce_id
+
+minus
+
+select  hrt.customer_id,hrt.rep_id from hcp_rep_terr hrt
+
+inner join sftu sf
+
+on sf.customer_id=hrt.customer_id
+
+group by hrt.customer_id,hrt.rep_id, hrt.salesforce_id)a",NA,NA,Not Applicable
+14,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct
+
+rep.salesforce_id,rep.business_unit_id ,rep.product_id from src  rep
+
+inner join
+
+(
+
+select distinct TRC.salesforce_id,TRC.sleeve_name_short, TRC.business_unit_id from team_resp_code TRC
+
+inner join
+
+(select SOURCE_PRODUCT_NAME from m_prod_xref
+
+WHERE SOURCE_NAME='TEAM_RESP_CD' AND ACTIVE ='Y') XREF
+
+on UPPER(TRIM(concat(TRC.salesforce_id,'_',TRC.brand_id)))=UPPER(TRIM(XREF.SOURCE_PRODUCT_NAME))) TRCM
+
+on upper(rep.salesforce_id)= replace(replace (trcm.sleeve_name_short,' ','_'),'-','_')
+
+and rep.business_unit_id = concat('US_',trcm.business_unit_id)
+
+union
+
+select distinct
+
+rep.salesforce_id,rep.business_unit_id,rep.product_id  from src rep
+
+inner join
+
+(
+
+select distinct TRC.salesforce_id,TRC.sleeve_name_short, TRC.business_unit_id from team_resp_code TRC
+
+inner join
+
+(select SOURCE_PRODUCT_NAME from m_prod_xref
+
+WHERE SOURCE_NAME='TEAM_RESP_CD' AND ACTIVE ='Y') XREF
+
+on UPPER(TRIM(concat(TRC.salesforce_id,'_',TRC.brand_id)))=UPPER(TRIM(XREF.SOURCE_PRODUCT_NAME))) TRCM
+
+on upper(rep.salesforce_id||'_TERRITOR')= replace(replace (trcm.sleeve_name_short,' ','_'),'-','_')
+
+and rep.business_unit_id = concat('US_BMBU_',trcm.business_unit_id)
+
+",NA,NA,Not Applicable
+15,Post,US_BR_ETL,data/employee/,rep_metadata,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(res.veeva_id)
+
+from
+
+(select distinct r.veeva_id from src r
+
+left join
+
+(select distinct id from veeva_users)vu
+
+on
+
+r.veeva_id=vu.id
+
+where  vu.id = NULL)res",NA,NA,BR : All reps in rep metadata are from Veeva Users object||Error resolution tip : Check from where the Veeva_Id's are coming from and reach out to veeva team
+16,Post,US_BR_ETL,data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,src,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+  (select distinct customer_id from src
+  where length(hcp_zip)<5) a",,,"DTT: Length check for ""hcp_zip"" column||Error resolution tip : Length of ""hcp_zip"" column should not be less than 5 characters."
+17,Post,US_BR_ETL,data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,src,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+  (select distinct customer_id from src
+  where hcp_zip is null) a",,,"DTT : Null check for ""hcp_zip"" column||Error resolution tip : ""hcp_zip"" column should not be Null."
+18,Post,US_BR_ETL,data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,src,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"
+select count(*) from
+(
+select distinct po1.customer_id, src.customer_id as rep_align_customer_id from
+(select * from US_PORTFOLIO_OPTIMIZATION_OUTPUT where actual_count>0 and upper(trim(channel_id)) = 'CALL') po1
+left join
+src
+on src.customer_id = po1.customer_id
+and src.territory_sk = po1.geography_id
+and src.product_id = po1.product_id
+and src.salesforce_code = po1.sales_force_code
+) x1
+where x1.rep_align_customer_id  is null",NA,NA,PO : Warning : PO Output has HCP-Terr-Team-Prod values with >0 calls which are not present in PO Rep Alignment||Error resolution tip :If it exceeds check the PO Rep alignment file
+19,Post,US_BR_ETL,data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,src,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"
+select count(*) from
+(
+select distinct po1.customer_id, src.customer_id as rep_align_customer_id from
+(select * from US_PORTFOLIO_OPTIMIZATION_OUTPUT where actual_count>0 and upper(trim(channel_id)) = 'VAE') po1
+left join
+src
+on src.customer_id = po1.customer_id
+and src.territory_sk = po1.geography_id
+and src.product_id = po1.product_id
+and src.salesforce_code = po1.sales_force_code
+) x1
+where x1.rep_align_customer_id  is null",NA,NA,PO : Warning : PO Output has HCP-Terr-Team-Prod values with >0 VAES which are not present in PO Rep Alignment||Error resolution tip :The threshold is 200. If it exceeds check the PO Rep alignment file
+20,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,rep_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct territory_sk) c1 from src
+where rep_id is null",NA,NA,PO : This checks shows the number of vacant terr in Rep Alignment||Error resolution tip :Check the alignment if the count increases
+21,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,territory_sk,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct geography_id from US_PORTFOLIO_OPTIMIZATION_OUTPUT
+except
+select distinct territory_sk from rep_alignment
+) x1",NA,NA,PO : Warning: PO Output has geography_ids not present in Rep Alignment||Error resolution tip :Check the territory_sk in HCP_TERR
+22,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,territory_sk,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct territory_sk from rep_alignment
+except
+select distinct geography_id from US_PORTFOLIO_OPTIMIZATION_OUTPUT
+) x1",NA,NA,PO : Warning: Rep Alignment has territory_sks not present in PO Output||Error resolution tip :Check the territory_sk are present in PO Output HCP_TERR
+23,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*)
+from 
+(select count(distinct rep_id) , count(distinct customer_id),salesforce_code,salesforce_id,product_id from(
+ 
+select rep_id,customer_id,salesforce_code,salesforce_id,
+case when business_unit_id  in ('US_OBU') or product_id like '%708122%' then substring(product_id,1,9) else product_id
+end as product_id from src)BR
+ 
+group by salesforce_code,salesforce_id,product_id
+ 
+except
+ 
+select count(distinct rep_id) , count(distinct customer_id),salesforce_code,salesforce_id,product_id
+from (select rep_id,customer_id,salesforce_code,salesforce_id,
+product_id
+from po_rep_alignment
+)po
+group by salesforce_code,salesforce_id,product_id
+)A",NA,NA,BR : BR REP ALignment and PO REP ALIGNMENT is not matching||Error resolution tip : Check where po_rep_alignment is dropping
+24,Post,US_BR_ETL,data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,rep_alignment,|,parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (*) from(
+
+select count(*),customer_id, product_id, rep_id from rep_alignment
+
+where rep_id is not null
+
+group by customer_id, product_id,  rep_id having count (*)>1) a",NA,NA,DTT: DTT Rep Alignment FIle is not unique on customer_id-product_id-rep_id||Error resolution tip : Check for duplicate entries on customer_id-product_id-rep_id- level.
+25,Post,US_BR_ETL,data/context_key=US_CONTEXT/source=rep_alignment/sugg_posted_date=current_date/,rep_alignment,|,parquet,guid,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+
+select value1 from
+
+(select distinct
+
+cast(concat(v2.config_value,'_',v.config_value,'_',m.attribute_value1) as string) as value1
+
+from (select * from m_prod_xref where BUSINESS_UNIT='ALZ'
+
+and source_name='TEAM_RESP_CD' and active ='Y') m
+
+inner join
+
+(
+
+select salesforce_id,sleeve_name,business_unit_id,trim(brand_id) as brand_id from
+
+(
+
+select salesforce_id,sleeve_name,business_unit_id,
+
+split(brand_id,';') AS brnd_id from team_resp_code
+
+)t1
+
+LATERAL VIEW explode(brnd_id) id AS brand_id
+
+)t2 on concat(t2.salesforce_id,'_',t2.brand_id) = m.source_product_name and source_name='TEAM_RESP_CD'
+
+and active = 'Y'
+
+inner join m_verso_cnfg v on v.config_type = t2.salesforce_id and v.PARAMETER_TYPE = 'RESP CODE MAPPING'
+
+inner join m_verso_cnfg v2 on v2.config_type = t2.business_unit_id and v2.parameter_type='BU MAPPING'
+
+and v2.attribute_value2=t2.salesforce_id
+
+)t3
+
+
+
+except
+
+
+
+select concat(business_unit_id,'_',salesforce_id,'_',product_id) as value2 from rep_alignment
+
+)a",NA,NA,"BR : BU-SF-product mapping is incorrect in alignment file||Error resolution tip : Check for the metadata files M_PROD_XREF, M_VERSO_CONFIG or code level changes in Rep_Alignment code"

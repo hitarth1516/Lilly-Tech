@@ -1,0 +1,40 @@
+name: Debug GitHub OIDC
+
+on:
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  debug-oidc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print GitHub Context
+        run: echo "GITHUB_REF is $GITHUB_REF"
+
+      - name: Request GitHub OIDC Token
+        id: get-token
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+            const url = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+            const resp = await fetch(url, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            const json = await resp.json();
+            console.log("Decoded OIDC Token JSON:");
+            console.log(json);
+            const decoded = JSON.parse(Buffer.from(json.value.split('.')[1], 'base64').toString());
+            console.log("Decoded JWT Claims:");
+            console.log(decoded);
+
+      - name: Decode OIDC Token via shell
+        run: |
+          TOKEN=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
+          echo "Raw token: $TOKEN"
+          echo "$TOKEN" | cut -d '.' -f2 | base64 -d | jq .

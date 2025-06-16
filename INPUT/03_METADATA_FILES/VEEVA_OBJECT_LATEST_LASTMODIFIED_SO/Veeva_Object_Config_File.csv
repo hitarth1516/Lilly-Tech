@@ -1,0 +1,6 @@
+ID,LOC,Identifier_Name1,ParamName,ParamValue,File_Name,Delimiter,File_Format,File_Dir,CUSTOM_QUERY
+1,US,,Internal_Bucket,aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03,,,,,
+4,US,VEEVA_OBJECTS_MAX_DATE,,,SO_LDG_VEEVA_CALL2,",",parquet,01_INPUT_FILES/SO_INTEG_VEEVA_OBJECTS/LDG_VEEVA_CALL2/,SELECT max(cast(lastmodifieddate as string)) as max_lastmodifieddate from src
+5,US,VEEVA_OBJECTS_MAX_DATE,,,SO_LDG_VEEVA_CALL2_DISCUSSION,",",parquet,01_INPUT_FILES/SO_INTEG_VEEVA_OBJECTS/LDG_VEEVA_CALL2_DISCUSSION/,SELECT max(cast(lastmodifieddate as string)) as max_lastmodifieddate from src
+6,US,VEEVA_OBJECTS_MAX_DATE,,,SO_LDG_VEEVA_CALL2_DTL,",",parquet,01_INPUT_FILES/SO_INTEG_VEEVA_OBJECTS/LDG_VEEVA_CALL2_DTL/,SELECT max(cast(lastmodifieddate as string)) as max_lastmodifieddate from src
+9,US,VEEVA_OBJECTS_MAX_DATE,,,SO_LDG_VEEVA_PROD,",",parquet,01_INPUT_FILES/SO_INTEG_VEEVA_OBJECTS/LDG_VEEVA_PROD/,SELECT max(cast(lastmodifieddate as string)) as max_lastmodifieddate from src

@@ -1,0 +1,57 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,`lilly_person_id`,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'UNIVERSAL_CUSTOMER_LIST' as FILE_NAME, count(*) as RECORD_COUNT, max(ds_load_dt)as LATEST_LOAD_DATE, 'ds_load_dt' as COLUMN_USED from ucl",,,File List and Latest Load Dates
+2,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,`lilly_person_id`,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and lilly_person_id is null,,,Lilly_person_id is null
+3,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,`lilly_person_id`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(select count(*),lilly_id_f from 
+
+
+ (select  h.winnerhcpreferenceid as  lilly_id_f,*
+from src  d  
+left join  hcpreferencexref h
+on eph_reference_id =loserhcpreferenceid ) a 
+ 
+
+
+where upper(country_code)='US' group by lilly_id_f 
+having count(*)>1)a",,,Duplicates on lilly_person_id
+4,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,`lilly_person_id`,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and length(lilly_person_id)!=11,,,Lilly_person_id does not contain 11 characters
+5,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,country_code,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 1 - count(distinct country_code) from src 
+where country_code in ('US')",,,One or more country_code required value is missing
+6,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,medscape_match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct medscape_match) from src 
+where medscape_match in ('Y','N')",,,One or more medscape_match required value is missing
+7,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,medscape_match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and medscape_match is null,,,medscape_match is null
+8,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,epocrates_match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct epocrates_match) from src 
+where epocrates_match in ('Y','N')",,,One or more epocrates_match required value is missing
+9,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,epocrates_match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and epocrates_match is null,,,epocrates_match is null
+10,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,ascension_flag,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct ascension_flag) from src 
+where ascension_flag in ('Y','N')",,,One or more ascension_flag required value is missing
+11,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,ascension_flag,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and ascension_flag is null,,,ascension_flag is null
+12,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,medpageeverydayhealth_match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct medpageeverydayhealth_match) from src 
+where medpageeverydayhealth_match in ('Y','N')",,,One or more medpageeverydayhealth_match required value is missing
+13,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,medpageeverydayhealth_match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and medpageeverydayhealth_match is null,,,medpageeverydayhealth_match is null
+14,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,Peerdirect_Match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct Peerdirect_Match) from src 
+where Peerdirect_Match in ('Y','N')",,,One or more Peerdirect_Match required value is missing
+15,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,Peerdirect_Match,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and Peerdirect_Match is null,,,Peerdirect_Match is null
+16,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,max_achievable_calls,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and max_frequency rlike '[^0-9]',,,Non-numeric or negative value in max_frequency
+17,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,access_flag,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct access_flag) from src 
+where access_flag in ('Y','N')",,,One or more access_flag required value is missing
+18,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,access_flag,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country_code)='US' and access_flag is null,,,access_flag is null
+19,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,FINAL_PFF_AFFINITY,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 6 - count(distinct FINAL_PFF_AFFINITY) from src 
+where FINAL_PFF_AFFINITY in ('H','L','M','NR','VH','VL')",,,One or more FINAL_PFF_AFFINITY required value is missing
+20,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,FINAL_PR_AFFINITY,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 3 - count(distinct FINAL_PR_AFFINITY) from src 
+where FINAL_PR_AFFINITY in ('H','L','M')",,,One or more FINAL_PR_AFFINITY required value is missing
+21,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,FINAL_PI_AFFINITY,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 3 - count(distinct FINAL_PI_AFFINITY) from src 
+where FINAL_PI_AFFINITY in ('H','L','M')",,,One or more FINAL_PI_AFFINITY required value is missing
+22,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,FINAL_DPH_AFFINITY,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 3 - count(distinct FINAL_DPH_AFFINITY) from src 
+where FINAL_DPH_AFFINITY in ('H','L','M')",,,One or more FINAL_DPH_AFFINITY required value is missing
+23,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,FINAL_DPL_AFFINITY,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 3 - count(distinct FINAL_DPL_AFFINITY) from src 
+where FINAL_DPL_AFFINITY in ('H','L','M')",,,One or more FINAL_DPL_AFFINITY required value is missing
+24,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,MLR_APPROVED_BRANDS_SPECIALTY,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select access_flag,ascension_flag,
+freq_flg, count(distinct lilly_person_id) from (
+select lilly_person_id,access_flag,ascension_flag,max_frequency,
+case when max_frequency = 0 then '0'
+when max_frequency > 0 then'Non 0' 
+when max_frequency is Null then 'Null' 
+end as freq_flg 
+from src where upper(country_code)='US') U
+group by access_flag,ascension_flag,freq_flg",,,Not Applicable
+25,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/UNIVERSAL_CUSTOMER_LIST/,UV_HCP_Universe,",",parquet,lilly_person_id,Good_Records,Daily,Active,NA,NA,N,prerequisite condition,Select * from src,Overwrite,,

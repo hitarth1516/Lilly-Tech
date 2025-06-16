@@ -1,0 +1,57 @@
+# Who : Ryan Strandt
+# When: 01-09-2022
+#
+# Reusable Workflows: https://docs.github.com/en/actions/using-workflows/reusing-workflows#overview
+#
+# This Workflow outputs two values associated to the workflow run.
+# - EnvDate: the current date/time string of the workflow run. The value is used for caching purposes in other workflows.
+# - Env: The Github environment to use for the workflow run based on Branch that is runing the workflow. This value can be adjusted in the `environment` step of the Deploy job.
+#        This value must match an already created Environment in the Github repo that can be managed under the repo settings.
+#
+# Usage:
+#   This workflow is a reusable workflow and can be invoked as a job in another workflow:
+############ Example: #############
+#
+#     jobs:
+#       ENV:
+#         uses: ./.github/workflows/environment.yml
+#
+############
+# You can adjust the behavior by modifying this file.
+
+name: 'Environment'
+
+on:
+  workflow_call:
+    outputs:
+      Env:
+        description: 'environment for deployment'
+        value: ${{ jobs.Deploy.outputs.Env }}
+      EnvDate:
+        description: 'Date-time of execution'
+        value: ${{ jobs.Deploy.outputs.EnvDate }}
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      EnvDate: ${{ steps.getDate.outputs.date }}
+      Env: ${{ steps.getEnvironment.outputs.environment_name }}
+    steps:
+      - name: Get Date
+        id: getDate
+        run: echo "::set-output name=date::$(/bin/date -u "+%Y%m%d%H")"
+        shell: bash
+      - name: environment
+        id: getEnvironment
+        env:
+          BRANCH: ${{github.ref_name}}
+          PRD_BRANCH: main
+          QA_BRANCH: qa
+        run: |
+          case "$BRANCH" in
+            "$PRD_BRANCH") echo "::set-output name=environment_name::prd" ;;
+            "$QA_BRANCH") echo "::set-output name=environment_name::qa" ;;
+            *) echo "::set-output name=environment_name::dev" ;;
+          esac
+        shell: bash

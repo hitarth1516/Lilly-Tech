@@ -1,0 +1,556 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement,ES
+67,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/12_VEEVA_OBJECTS/LDG_VEEVA_CALL2_182_DAYS/,ldg_veeva_call2_182_days,",",parquet,veeva_data,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'a',min(createddate), max(createddate) from src
+union all
+select 'b',min(createddate), max(createddate) from ldg_veeva_call2_dtl_182_days
+union all
+select 'c',min(createddate), max(createddate) from ldg_veeva_email_activity",,,Not Applicable,SIT: Validate Veeva data pulled from Veeva (OMNICHANN-2391)
+19,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select CAST(COUNT(distinct customer_id) as int) from src
+union all
+select CAST(count(distinct lilly_person_id) as int) from ldg_rheum_tgt where indication_id='DS152'",,,Not Applicable,SIT: Validate PP Targets (hcp univ vs target file) (OMNICHANN-2448)
+20,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select CAST(COUNT(distinct customer_id) as int) from src 
+union all
+select CAST(count(distinct lilly_person_id) as int) from ( select distinct lilly_person_id,
+case when UPPER(TRIM(mce_segment)) in ('DR. DOMAINS','DR. EASE OF ACCESS', 'DR. JOINT ONLY', 'DR. TNF') 
+and is_target ='Y' then 'YES' ELSE 'NO' end as npp_segment
+from ldg_rheum_tgt where indication_id='DS152') a",,,Not Applicable,SIT:Validate NPP Targets (hcp univ vs target file)(OMNICHANN-2449)
+31,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,mlr_approved_flag,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where mlr_approved_flg = 0) hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - MLR Approval (OMNICHANN-2440)
+32,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,incentivised,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where incentivised_flg = 0) hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT:HCP LEVEL Constarints - Incentivised (OMNICHANN-2441)
+33,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,brnd_email,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where brnd_email_opt_flg = 'YES') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - CORP_EMAIL (OMNICHANN-2443)
+34,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,corp_email_opt,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where corp_email_opt_flg = 'YES') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - BRND EMAIL (OMNICHANN-2442)
+35,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,colorado,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where colorado_opt_flg = 'YES') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - COLORADO (OMNICHANN-2446)
+36,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,vermont,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where vermont_opt_flg = 'YES') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - VERMONT (OMNICHANN-2447)
+37,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,npp_target,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where npp_target = 'NO') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - NPP Target (OMNICHANN-2444)
+38,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,pp_target,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where pp_target = 'NO') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT:HCP LEVEL Constarints - PP Target (OMNICHANN-2445)
+39,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,medscape_match,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where medscape_match = 'NO') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - Medscape match (OMNICHANN-3904)
+40,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,epocrates_match,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed, count(*) from 
+(select * from src  where epocrates_match = 'NO') hcp_universe
+left join hcp_level_constraints hcp_level_constraints on hcp_level_constraints.customer_id = hcp_universe.customer_id
+group by channel,hcp_level_constraints.min_allowed,hcp_level_constraints.max_allowed",,,Not Applicable,SIT: HCP LEVEL Constarints - Epocrates match (OMNICHANN-3905)
+64,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,epocrates_flag,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from src where epocrates_match=""NO"" 
+union all    
+select count(distinct customer_id) from src where epocrates_match=""NO"" and customer_id in(
+select distinct lilly_person_id from med_se where epocrates_match =""N""
+)
+union all
+select count(distinct customer_id) from src where epocrates_match=""NO"" and customer_id not in(
+select distinct customer_id from src where epocrates_match=""NO"" and customer_id in(
+select distinct lilly_person_id from med_se where epocrates_match =""N""
+)
+)",,,Not Applicable,SIT: Validate Epocrates flag in HCP Universe (OMNICHANN-3903)
+65,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,medscape_flag,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from src where medscape_match=""NO""
+union all    
+select count(distinct customer_id) from src where medscape_match=""NO"" and customer_id in(
+select distinct lilly_person_id from med_se where medscape_match =""N""
+)
+union all
+select count(distinct customer_id) from src where medscape_match=""NO"" and customer_id not in(
+select distinct customer_id from src where medscape_match=""NO"" and customer_id in(
+select distinct lilly_person_id from med_se where medscape_match =""N""
+)
+)",,,Not Applicable,SIT: Validate Medscape flag in HCP Universe (OMNICHANN-3902)
+66,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct customer_id, activity_start_date,attendee_type from p2p
+inner join src hcp_unv on hcp_unv.customer_id = lpad(lilly_customer_id,11,0)
+where  from_unixtime(unix_timestamp(activity_start_date,'dd-MM-yyyy'),'yyyy-MM-dd') >='DQM_CADENCE_START_DATE'
+and brand_disease_state like '%Rheum%'
+and upper(trim(ATTENDEE_TYPE)) <>'FACULTY'
+and activity_status = 'Confirmed'
+and kaiser_opt_flg = 'NO'
+and lilly_customer_id is not null",,,Not Applicable,SIT: Validate HCP level P2P Events (OMNICHANN-2403)
+73,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct customer_id from src
+minus
+select distinct rep_id from rep_alignment",,,Not Applicable,SIT: Validate HCP universe has HCPs with and without rep alignment(OMNICHANN-2401)
+78,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/context_key=DEFAULT_CONTEXT/entity=hcp_master/,hcp_universe,",",parquet,dimension_value,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'COLORADO'as flg_name, 'GCCP',h.COLORADO_OPT_FLG as opt_flg,
+count(distinct customer_id)
+from src
+left join 
+(
+SELECT *,
+CASE WHEN UPPER(TRIM(`STATE_OPT-OUT`))='OUT' THEN 'YES'
+     WHEN UPPER(TRIM(`STATE_OPT-OUT`))='IN' THEN 'NO' ELSE 'NO' END AS COLORADO_OPT_FLG	
+FROM gccp
+where TRIM(UPPER(level))='ENTITLEMENT' and TRIM(UPPER(entitlement))='COMMERCIAL'
+) h 
+on UPPER(TRIM(LILLY_PERSON_ID)) = UPPER(TRIM(customer_id))
+group by h.COLORADO_OPT_FLG
+union
+select 'COLORADO'as flg_name, 'UNIVERSE',colorado_opt_flg as opt_flg,count(distinct customer_id) from src group by colorado_opt_flg
+
+union all
+select 'KAISER'as flg_name,'GCCP',h.KAISER_OPT_FLG as opt_flg,
+count(distinct customer_id)
+from src
+left join 
+(
+SELECT *,
+CASE WHEN UPPER(TRIM(KAISER_FLAG))='OUT' THEN 'YES'
+     WHEN UPPER(TRIM(KAISER_FLAG))='IN' THEN 'NO' ELSE 'NO' END AS KAISER_OPT_FLG
+FROM gccp
+where TRIM(UPPER(level))='ENTITLEMENT' and TRIM(UPPER(entitlement))='COMMERCIAL'
+)
+ h on UPPER(TRIM(LILLY_PERSON_ID)) = UPPER(TRIM(customer_id))
+group by h.KAISER_OPT_FLG
+union
+select 'KAISER'as flg_name,'UNIVERSE',kaiser_opt_flg as opt_flg,count(distinct customer_id) from src group by kaiser_opt_flg
+
+union all
+select 'VERMONT'as flg_name,'GCCP',h.VERMONT_OPT_FLG as opt_flg,
+count(distinct customer_id)
+from src
+left join 
+(
+SELECT *,
+CASE WHEN UPPER(TRIM(`STATE_OPT-OUT`))='OUT' THEN 'YES'
+     WHEN UPPER(TRIM(`STATE_OPT-OUT`))='IN' THEN 'NO' ELSE 'NO' END AS VERMONT_OPT_FLG
+FROM gccp
+where TRIM(UPPER(level))='ENTITLEMENT' and TRIM(UPPER(entitlement))='COMMERCIAL'
+) 
+h on UPPER(TRIM(LILLY_PERSON_ID)) = UPPER(TRIM(customer_id))
+group by h.VERMONT_OPT_FLG
+union
+select 'VERMONT'as flg_name,'UNIVERSE',vermont_opt_flg as opt_flg,count(distinct customer_id) from src group by vermont_opt_flg
+
+union all
+select 'AMA'as flg_name,'GCCP',h.AMA_PDRP_OUT as opt_flg, 
+count(distinct customer_id)
+from src
+left join 
+(
+SELECT *,
+CASE WHEN UPPER(TRIM(AMA_PDRP))='OUT' THEN 'YES'
+     WHEN UPPER(TRIM(AMA_PDRP))='IN' THEN 'NO' ELSE 'NO' END AS AMA_PDRP_OUT
+FROM gccp
+where TRIM(UPPER(level))='ENTITLEMENT' and TRIM(UPPER(entitlement))='COMMERCIAL'
+) 
+ h on UPPER(TRIM(LILLY_PERSON_ID)) = UPPER(TRIM(customer_id))
+group by h.AMA_PDRP_OUT
+union
+select 'AMA'as flg_name,'UNIVERSE',ama_opt_out as opt_flg,count(distinct customer_id) from src group by ama_opt_out",,,Not Applicable,SIT: Validate GCCP metrics in HCP Universec (OMNICHANN-3507)
+16,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Eng_based_Tactic_assignment_13_weeks/,eng_based_tactic_assignment_13_weeks,",",parquet,primary_key_message,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select A.*, data_source_code,primary_category, engagement_rate from 
+(select assigned_tactic,count(*) from src group by assigned_tactic) A 
+left join cap_extract on assigned_tactic = verso_tactic_id
+left join tactic_engagement_rate on tactic_id = A.assigned_tactic",,,Not Applicable,Check content type assigned for each tactic and channel
+17,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Eng_based_Tactic_assignment_13_weeks/,eng_based_tactic_assignment_13_weeks,",",parquet,exposed_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct exposed_on from src
+left join interaction_history on interaction_history.customer_id = src.customer_id
+and src.assigned_tactic = content_id",,,Not Applicable,Check tactic recommended in engagement based are not receive by the HCP in last 13 or 6 wk
+53,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Eng_based_Tactic_assignment_13_weeks/,eng_based_Tactic_assignment_13_weeks,",",parquet,exposed_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct exposed_on from src
+left join interaction_history on interaction_history.customer_id = src.customer_id
+and src.assigned_tactic = content_id",,,Not Applicable,SIT: Validate tactics engaged in past 
+63,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Eng_based_Tactic_assignment_13_weeks/,eng_based_Tactic_assignment_13_weeks,",",parquet,engagement_rate,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select A.*, data_source_code,primary_category, engagement_rate from 
+(select assigned_tactic,count(*) from (
+select * from src
+minus
+select * from eng_based_tactic_assignment_6_weeks
+) b
+group by assigned_tactic) A 
+left join cap_extract on assigned_tactic = verso_tactic_id
+left join tactic_engagement_rate_rheum on tactic_id = A.assigned_tactic",,,Not Applicable,SIT: Validate 13 wk engagement based tactic assignment (OMNICHANN-2436)
+60,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Eng_based_Tactic_assignment_6_weeks/,eng_based_Tactic_assignment_6_weeks,",",parquet,exposed_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct exposed_on from src
+left join interaction_history on interaction_history.customer_id = src.customer_id
+and src.assigned_tactic = content_id",,,Not Applicable,SIT: Validate 6 wk engagement based tactic assignment (OMNICHANN-2437)
+26,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,channel_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel_id, content_type_id from src",,,Not Applicable,SIT: Validate Content categories mapped in interaction history (OMNICHANN-2420)
+27,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,channel_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel_id,tactic_id,content_id,content_type_id,message_type from
+(select distinct channel_id,content_type_id,content_id from src) interaction_history 
+left join soa on soa.tactic_id = content_id
+where channel_id in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_EMAIL','MEDSCAPE_ALERT','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')",,,Not Applicable,SIT:Validate content id mapped in interaction history (OMNICHANN-2421/ OMNICHANN-2422)
+28,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,exposed_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select exposed_on, engaged_on, acted_on,loaded_on from src where exposed_on is null",,,Not Applicable,SIT: Validate exposed on date in interaction history (OMNICHANN-2416)
+29,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,exposed_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select min(from_unixtime(unix_timestamp(exposed_on,'MM-dd-yyyy HH:mm:ss'),'yyyy-MM-dd')), max(from_unixtime(unix_timestamp(exposed_on,'MM-dd-yyyy HH:mm:ss'),'yyyy-MM-dd')) from src where product_id = ""US_304528""",,,Not Applicable,SIT:Validate interaction history is not more than 182 days (OMNICHANN-2419)
+30,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'int_hist',count(distinct customer_id) from src
+union all
+select 'hcp_unv',count(*) from hcp_universe
+union all
+select 'hcp_unv distinct',count(distinct customer_id) from hcp_universe
+union all
+select 'target',count(DISTINCT LILLY_PERSON_ID) from ldg_rheum_tgt where indication_id='DS152'
+union all
+select 'demog distinct',count(distinct customer_id) from demog
+union all
+select 'demog',count(*) from demog",,,Not Applicable,SIT:Validate unique count of HCP ( Lilly person ID) in target table are matching with source target lists (OMNICHANN-2392)
+57,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,content_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select expo.content_id,count(distinct eng.customer_id)/count(distinct expo.customer_id) as eng_rate
+from ( select * from src) expo
+left join (select * from interaction_history where engaged_on<>'') eng
+on expo.content_id=eng.content_id
+where expo.content_id in (select distinct tactic_id from tactic_engagement_rate)
+group by expo.content_id",,,Not Applicable,SIT: Validate engaged tactics
+68,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,hcp_count,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from src
+union all 
+select count(distinct customer_id) from hcp_universe",,,Not Applicable,SIT: Validate hcp count in interaction history (OMNICHANN-2418)
+69,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,hcp_count,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select exposed_on ,engaged_on,acted_on,loaded_on from src",,,Not Applicable,"SIT: Validate the date format for exposed_on, acted, loaded_on, engaged_on (OMNICHANN-2417)"
+72,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,channel_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel_id,min(from_unixtime(unix_timestamp(exposed_on,'MM-dd-yyyy'),'yyyy-MM-dd'))
+,max(from_unixtime(unix_timestamp(exposed_on,'MM-dd-yyyy'),'yyyy-MM-dd'))
+from src GROUP BY channel_id
+having channel_id in (""DOXIMITY_ALERT"",""HQ_EMAIL"",""MEDSCAPE_ALERT"",""MEDSCAPE_EMAIL"",""EPOCRATES_ALERT"",""MEDSCAPE_POC"",""DOXIMITY_DOCSPOT"")",,,Not Applicable,SIT : Validate interaction has SFMC backfilling values (OMNICHANN-2402)
+74,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,loaded_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,select distinct loaded_on  from src,,,Not Applicable,SIT: Validate loaded on is current date in interaction history (OMNICHANN-2400)
+84,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (
+select distinct channel_id,tactic_id,content_id,content_type_id,message_type from
+(select distinct channel_id,content_type_id,content_id from src) interaction_history 
+left join soa on soa.tactic_id = content_id
+where channel_id in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_EMAIL','MEDSCAPE_ALERT','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')) a
+where tactic_id <> content_id",,,Error: Violation in content id mapped in interaction history,Validate content id mapped in interaction history (OMNICHANN-2421/ OMNICHANN-2422)
+85,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/interaction_history/,interaction_history,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select (count(distinct c1 ) - 1) as c2 from 
+(
+select count(DISTINCT LILLY_PERSON_ID) as c1 from ldg_rheum_tgt where indication_id='DS152'
+union all
+select count(*) as c1 from hcp_universe
+union all 
+select count(distinct customer_id) as c1 from src
+union all
+select count(distinct customer_id) as c1 from hcp_universe
+union all
+select count(*) as c1 from demog
+union all
+select count(distinct customer_id) as c1 from demog
+) a",,,Error: Violation in unique count of HCP ( Lilly person ID) in target table as they are not matching with source target lists ,Validate unique count of HCP ( Lilly person ID) in target table are matching with source target lists 
+49,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_INPUT/job_id=dynamic_JOB_ID/,ml_input,",",parquet,fixed_events,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct ml.dimension1 as channel,ml.dimension2 as content,ml.`date` as cadence,
+ ml.source from src lateral view explode(fixed_events)m as ml",,,Not Applicable,SIT: Validate fixed events are present in ML Input (OMNICHANN-2415)
+2,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml",,,Not Applicable,INFO : Distinct Channels
+3,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select channel,cadence, count(*) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml where 
+from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') >='DQM_CADENCE_START_DATE'
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <= 'DQM_CADENCE_END_DATE'
+and rationale = 'AI_DRIVEN'
+group by channel, cadence",,,Not Applicable,INFO : # of recommendations for current week
+4,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel,from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'u') from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml",,,Not Applicable,SIT: Validate blackout dates are applied (OMNICHANN-2411)
+5,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct channel) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'
+and mlr_approved_flg =0",,,Records without MLR approved consent present," Detailed check for this query is ""SIT: HCP LEVEL Constarints - MLR Approval"""
+6,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct channel) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'
+and incentivised_flg =0 and UPPER(TRIM(channel)) not in ('HQ_EMAIL','MEDSCAPE_EMAIL','MEDSCAPE_ALERT','DOXIMITY_ALERT','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')",,,Records without incentiviced consent present,"Detailed check for this query is ""SIT:HCP LEVEL Constarints - Incentivised """
+7,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct channel) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'
+and brnd_email_opt_flg = 'YES' and UPPER(TRIM(channel)) not in ('F2F_CALL','HQ_EMAIL','MEDSCAPE_ALERT','DOXIMITY_ALERT','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')",,,Records without brand email opt consent present,"Detailed check for this query is ""SIT: HCP LEVEL Constarints - BRND EMAIL"""
+8,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct channel) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'
+and corp_email_opt_flg = 'YES' and UPPER(TRIM(channel)) not in ('F2F_CALL','HQ_EMAIL','MEDSCAPE_ALERT','DOXIMITY_ALERT','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')",,,Records without corporate email opt consent present," Detailed check for this query is ""SIT: HCP LEVEL Constarints - CORP_EMAIL """
+9,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct channel) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'
+and colorado_opt_flg = 'YES' and UPPER(TRIM(channel)) not in ('F2F_CALL','HQ_EMAIL','VEEVA_EMAIL')",,,Records without COLORADO consent present," Detailed check for this query is ""SIT: HCP LEVEL Constarints - COLORADO'"
+10,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct channel) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'
+and vermont_opt_flg = 'YES' and UPPER(TRIM(channel)) not in ('F2F_CALL','HQ_EMAIL','VEEVA_EMAIL')",,,Records without VERMONT opt consent present," Detailed check for this query is ""SIT: HCP LEVEL Constarints - VERMONT"""
+11,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,segment,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct segment from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml inner join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale ='AI_DRIVEN'",,,Not Applicable,Valiate NPP segment in recommendations
+12,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select a.cnt1 - b.cnt2 from
+(select cast(count(*) as int) as cnt1,1 as joinn from random_tactic_assignment) a
+join
+(select cast(count(*) as int) as cnt2,1 as joinn from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel,
+ml.dimension2 as content,
+ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml 
+where rationale = 'AI_DRIVEN'
+and channel in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_ALERT','MEDSCAPE_EMAIL','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT','VEEVA_EMAIL')
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE') b
+on a.joinn = b.joinn",,,Mismatch # of recommendations after tactic assignment,
+18,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select segment,channel, max(tp) as ml_tp from (
+select ml.customer_id,segment,channel,count(*) as tp from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, 
+ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml 
+left join hcp_universe on ml.customer_id=hcp_universe.customer_id
+where rationale = 'AI_DRIVEN'
+group by segment, channel,ml.customer_id) A
+group by a.segment, channel) B
+left outer join
+(select distinct segment,dimension_value,cast(max as int) as htc_tp from hcp_touchpoint_constraints where 
+upper(trim(dimension)) = 'DIMENSION1'
+and upper(trim(product)) = 'US_304528'
+and upper(trim(brand_indication)) = 'RHEUM') C 
+on upper(trim(b.segment)) = upper(trim(c.segment)) and upper(trim(b.channel)) = upper(trim(c.dimension_value))
+where ml_tp > htc_tp",,,Error : Maximum touchpoint exceeded,
+21,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,refresh_date,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct refresh_date, next_execution_on from src",,,Not Applicable,SIT: Validate 4C Output Refresh Date (OMNICHANN-2407)
+22,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select min(from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') ),
+max(from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd')) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml where rationale=""AI_DRIVEN""",,,Not Applicable,SIT: Validate 4C Output Recommendation Period (OMNICHANN-2406)
+23,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,"channel,content",Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel,content from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml
+where rationale = 'AI_DRIVEN'",,,Not Applicable,SIT: Validate that invalid combinations have been applied for channel-content combinations (OMNICHANN-2412)
+24,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count(distinct customer_id) from src
+union all
+select count(*) from hcp_universe
+where kaiser_opt_flg = 'NO'
+and (npp_target = 'YES' or pp_target = 'YES')",,,Not Applicable,SIT: Validate there is atleast 1 recommendation for each HCP in 180 days (OMNICHANN-2408)
+41,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,min_allowed,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select segment, channel, min(touchpoint) as min_t,max(touchpoint) as max_t from (
+select ml.customer_id,segment,channel, count(*) as touchpoint from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml
+left join hcp_universe on hcp_universe.customer_id = ml.customer_id where channel<>'P2P' and ml.rationale = 'AI_DRIVEN'
+group by ml.customer_id,segment,channel) A group by segment, channel",,,Not Applicable,SIT: Validate max touchpoint constraint is not violated (OMNICHANN-2409)
+42,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,epocrates_match,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct epocrates_match from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml
+left join hcp_universe
+on ml.customer_id=hcp_universe.customer_id
+where ml.channel IN  (""EPOCRATES_ALERT"")",,,Not Applicable,SIT: Validate Epocrates recommendations in ML output (OMNICHANN-3906)
+43,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,medscape_match,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct medscape_match from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml
+left join hcp_universe
+on ml.customer_id=hcp_universe.customer_id
+where ml.channel IN  (""MEDSCAPE_ALERT"",""MEDSCAPE_EMAIL"",""MEDSCAPE_POC"")",,,Not Applicable,SIT: Validate Medscape recommendations in ML output (OMNICHANN-3907)
+44,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,cadence,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select min(cadence),
+max(cadence) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml where rationale=""AI_DRIVEN""",,,Not Applicable,SIT: Validate that output is generated for 26 weeks (OMNICHANN-2413)
+70,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel,content from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src lateral view explode(mloutput.recommendation) m as ml) ml",,,Not Applicable,SIT: Validate content type and content recommendation (OMNICHANN-2410)
+92,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,channel,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (
+select distinct channel,from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'u') as day_num from (select customer_id,ml.`date` as cadence,
+ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from src
+lateral view explode(mloutput.recommendation) m as ml) ml) a
+where channel in ('F2F_CALL','VEEVA_EMAIL','HQ_EMAIL') and day_num not in ('1','2','3','4','5')
+and channel in ('DOXIMITY_DOCSPOT','DOXIMITY_ALERT','EPOCRATES_ALERT') and day_num not in ('3')
+and channel in ('MEDSCAPE_EMAIL','MEDSCAPE_ALERT','MEDSCAPE_POC') and day_num not in ('4')",,,Error: Blackout dates violated,Validate blackout dates are applied (OMNICHANN-2411)
+1,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/ML_OUTPUT/job_id=dynamic_JOB_ID/,ml_output,",",parquet,dimension1,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select a.cnt1 - b.cnt2 from (
+select cast(count(*) as int) as cnt1, 1 as joinn from src
+)a
+join
+(select cast(count(*) as int) as cnt2, 1 as joinn from hcp_universe where kaiser_opt_flg = 'NO' 
+and (npp_target = 'YES' or pp_target = 'YES')
+) b on a.joinn = b.joinn",,,Mismatch in # of HCPs,
+82,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_history/job_id=dynamic_JOB_ID/,nba_history,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select min(cadence), max (cadence) from src",,,Not Applicable,SIT: Validate cadence for NBA history
+83,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_history/job_id=dynamic_JOB_ID/,nba_history,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count (distinct customer_id) from src
+union all
+select count(distinct ml.customer_id)
+from 
+(select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml
+left join tactic_suppressed_recommendations sr
+on ml.customer_id = sr.customer_id
+and from_unixtime(unix_timestamp(ml.cadence,'MM/dd/yyyy'),'yyyy-MM-dd') = sr.cadence
+and ml.channel = sr.channel_id and ml.content = sr.content_type_id
+where  from_unixtime(unix_timestamp(ml.cadence,'MM/dd/yyyy'),'yyyy-MM-dd')<= 'DQM_CADENCE_END_DATE'
+and sr.customer_id is null",,,Not Applicable,SIT: Validate HCP count in NBA history
+25,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_out/job_id=dynamic_JOB_ID/,nba_out,",",parquet,channel,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel, rationale from( select customer_id,cadence, channel, contenttype.id,content, rationale.key as rationale from src) emg_4c where rationale<>'AI_DRIVEN'",,,Not Applicable,SIT:Validate fixed events are present in ml output
+55,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_out/job_id=dynamic_JOB_ID/,nba_out,",",parquet,count,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'a',count(*) from src
+union 
+select 'b',count(distinct action_id) from src",,,Not Applicable,SIT: Validation no duplication in verso recommendation id (OMNICHANN-3909)
+56,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_out/job_id=dynamic_JOB_ID/,nba_out,",",parquet,loc,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select loc,channel,rationale,ct from
+(select 's3' as loc,channel,ml_rationale.rationalekey as rationale,count(*) as ct from src where  cadence<=""DQM_CADENCE_END_DATE 00:00:00.0""
+group by channel,ml_rationale.rationalekey 
+union
+select 'hdfs',channel,rationale,count(*) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml 
+where from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE'
+group by channel,rationale
+union
+select 'dropped_recs',channel_id as channel,rationale,count(*) from tactic_suppressed_recommendations
+group by channel_id,rationale) a
+order by rationale,channel,loc",,,Not Applicable,SIT: Validate there is no drop b/w hdfs ml out and s3 ml out (post content selection) (OMNICHANN-3910)
+77,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_out/job_id=dynamic_JOB_ID/,nba_out,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select a.cnt1 - b.cnt2 from (
+select cast(count(*) as int) as cnt1, 1 as joinn from src
+)a
+join
+(select cast(count(*) as int) as cnt2, 1 as joinn from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml
+)b
+on a.joinn = b.joinn",,,Mismatch in count between ml_out and nba_out,SIT: count check  ml_out vs nba_out
+88,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_out/job_id=dynamic_JOB_ID/,nba_out,",",parquet,count,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select a.cnt1 - b.cnt2 from (
+select count(*) as cnt1, 1 as joinn from src)a
+join (
+select count(distinct action_id) as cnt2 , 1 as joinn from src
+)b on a.joinn = b.joinn",,,Error: Duplication in verso recommendation id, Validation no duplication in verso recommendation id
+89,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/nba_out/job_id=dynamic_JOB_ID/,nba_out,",",parquet,loc,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select a.cnt1 - b.cnt2 from 
+(select '1' as joinn,count(*) as cnt1 from src where  cadence<=""DQM_CADENCE_END_DATE 00:00:00.0"")a
+join
+(select '1' as joinn , count(*) as cnt2 from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml 
+where from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE')b
+on a.joinn = b.joinn",,,Error:   Drop b/w hdfs ml out and s3 ml out (post content selection), Validate there is no drop b/w hdfs ml out and s3 ml out (post content selection)
+13,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment_post_suppression/,random_tactic_assignment,",",parquet,channel_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel_id,content_type_id,assigned_tactic from src",,,Not Applicable,SIT: Validate tactics recommended for HQ and SOA channels (OMNICHANN-2423)
+14,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment_post_suppression/,random_tactic_assignment,",",parquet,pp_segment,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct npp_segment, verso_tactic_id,mm as customer_segment from src
+left join 
+(select verso_tactic_id,mm from cap_extract lateral view explode(split(customer_segment,"";"")) m as mm) cap
+on cap.verso_tactic_id = assigned_tactic
+left join hcp_universe on hcp_universe.customer_id = src.customer_id
+where mm <> ''",,,Not Applicable,Validate customer segment assigned in tactic assignment algorithm
+50,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment_post_suppression/,random_tactic_assignment,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+SELECT distinct channel_id,content_type_id,cadence
+FROM src) a
+union all
+select count(*) from (
+select distinct channel,content, cadence
+from  (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml
+where channel in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_ALERT','MEDSCAPE_EMAIL','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT','VEEVA_EMAIL')
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE'
+and rationale = 'AI_DRIVEN') b",,,Not Applicable,SIT: Validate TSL (OMNICHANN-2439)
+51,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment_post_suppression/,random_tactic_assignment,",",parquet,channel_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel_id,content_type_id from src",,,Not Applicable,SIT: Validate expected channel contenttype combination
+52,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment/,tactic_before_suppression,",",parquet,channel_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'rheum random',channel_id,content_type_id,count(*) from src
+group by channel_id,content_type_id
+union all
+select 'rheum ml',channel,contenttype,count(*) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as contenttype,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml where rationale = 'AI_DRIVEN'
+and channel in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_ALERT','MEDSCAPE_EMAIL','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT','VEEVA_EMAIL')
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE'
+group by channel,contenttype",,,Not Applicable,SIT: Validate channel-content wise count in random tactics vs ML OUT
+58,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment_post_suppression/,random_tactic_assignment,",",parquet,tactic_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct channel_id,content_type_id,assigned_tactic from src",,,Not Applicable,SIT: Validate random tactic ID is assigned (OMNICHANN-2438)
+87,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Random_Tactics_assignment_post_suppression/,random_tactic_assignment,",",parquet,,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select a1.cnt1 - b1.cnt2 from (
+select count(*) as cnt1, 1 as joinn from(
+SELECT distinct channel_id,content_type_id,cadence
+FROM src) a
+)a1
+join
+(
+select count(*) as cnt2, 1 as joinn from (
+select distinct channel,content, cadence
+from  (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_output lateral view explode(mloutput.recommendation) m as ml) ml
+where channel in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_ALERT','MEDSCAPE_EMAIL','EPOCRATES_ALERT','VEEVA_EMAIL','MEDSCAPE_POC','DOXIMITY_DOCSPOT')
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE'
+and rationale = 'AI_DRIVEN') b
+)b1
+on a1.joinn = b1.joinn",,,Error: Mismatch in # of records in random tactics and ml_ouptput,Validate TSL
+15,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Recent_Tactics_assignment/,recent_tactic_engagement,",",parquet,assigned_tactic,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select A.*, tactic_start_date,tactic_end_date from 
+(select assigned_tactic,count(*) from src group by assigned_tactic) A 
+left join cap_extract on assigned_tactic = verso_tactic_id",,,Not Applicable,Check tactics assigned after engagement based logic
+54,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Recent_Tactics_assignment/,recent_tactics_assignment,",",parquet,exposed_on,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct exposed_on from src
+left join interaction_history on interaction_history.customer_id = src.customer_id
+and src.assigned_tactic = content_id",,,Not Applicable,SIT: Validate tactics engaged in past (recent_tactic)
+59,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Recent_Tactics_assignment/,recent_tactics_assignment,",",parquet,dates,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select A.*, tactic_start_date,tactic_end_date from 
+(select assigned_tactic,count(*) from src group by assigned_tactic) A 
+left join cap_extract on assigned_tactic = verso_tactic_id",,,Not Applicable,SIT: Validate recent tactics (OMNICHANN-2435)
+61,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Recent_Tactics_assignment/,recent_tactics_assignment,",",parquet,assigned_tactic,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select DISTINCT assigned_tactic FROM src where assigned_tactic in(
+select distinct verso_tactic_id from cap_extract where upper(trim(product)) = 'TALTZ' AND
+from_unixtime(unix_timestamp(tactic_end_date,'dd-MM-yyyy'),'yyyy-MM-dd') <='DQM_CADENCE_END_DATE')",,,Not Applicable,SIT: Validate Tactics recommended (OMNICHANN-2684)
+79,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Recent_Tactics_assignment/,recent_tactics_assignment,",",parquet,assigned_tactic,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"Select count(*) from (select A.*, tactic_start_date,tactic_end_date from
+(select assigned_tactic,count(*) from src group by assigned_tactic) A
+left join cap_extract on assigned_tactic = verso_tactic_id
+where from_unixtime(unix_timestamp(tactic_start_date,'MM-dd-yyyy'),'yyyy-MM-dd') < date_add('current_date', -28))abc",,,Tactic Start date less than posted date minus 28 days,
+71,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/ml_models/nba/TALTZ_RHEUM_3D/nbaDemographic/,demog,",",csv,hcp _count,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'Total Count' as metric ,count(*) as value from src
+union 
+select 'Distinct Count' as metric, count(distinct customer_id) from src",,,Not Applicable,SIT: Validate no duplicates in demographics (OMNICHANN-2404)
+80,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/ml_models/nba/TALTZ_RHEUM_3D/nbaDemographic/,demog,",",csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select sum(MCE_SEGMENT_PSA_Dr_DOMAINS), sum (MCE_SEGMENT_PSA_Dr_EASE_OF_ACCESS),
+sum (MCE_SEGMENT_PSA_Dr_JOINT_ONLY), sum (MCE_SEGMENT_PSA_Dr_TNF), sum (MCE_SEGMENT_PSA_UNKNOWN) ,sum (TALTZ_PSA_BRAND_TARGET_SEGMENT_CRITICAL), sum (TALTZ_PSA_BRAND_TARGET_SEGMENT_LOW),
+sum (TALTZ_PSA_BRAND_TARGET_SEGMENT_MEDIUM), sum (TALTZ_PSA_BRAND_TARGET_SEGMENT_NON_TARGETS), sum (TALTZ_PSA_BRAND_TARGET_SEGMENT_HIGH) ,sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_H), sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_L), sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_M)
+,sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_N) from src",,,Not Applicable,SIT: Validate distinct LOVs #1
+81,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/ml_models/nba/TALTZ_RHEUM_3D/nbaDemographic/,demog,",",csv,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select DISTINCT sum (SPCLTY_OTHER),sum (SPCLTY_RHU), sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_H),sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_L),sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_M),
+sum (TALTZ_GOOD_PAYER_ACCESS_RHEUM_N) , sum (IS_RHEUM_TARGET_N),sum (IS_RHEUM_TARGET_Y) , sum (final_pff_affinity_h),sum(final_pff_affinity_l),sum (final_pff_affinity_m),sum (final_pff_affinity_unknown),
+sum (final_pff_affinity_vh),sum (final_pff_affinity_vl), sum (final_pr_affinity_h),sum (final_pr_affinity_l),
+sum (final_pr_affinity_vh),sum (final_pr_affinity_vl), sum (final_dph_affinity_h),sum (final_dph_affinity_l),sum (final_dph_affinity_m),sum (final_dph_affinity_unknown),sum (final_dph_affinity_vh),sum (final_dph_affinity_vl),sum (final_access_accessible),sum (final_access_inaccessible),sum (final_access_not_rated),sum (final_access_unknown) from src",,,Not Applicable,SIT: Validate distinct LOVs #2
+45,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,dates,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select distinct platform,active_start_date,active_end_date from src
+where UPPER(TRIM(brand))= ""TALTZ_PSORIATIC ARTHRITIS""",,,Not Applicable,SIT:Validate active start and active end date in SFMC extract (OMNICHANN-2431)
+46,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,active_start_date,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select distinct active_start_date from src 
+where UPPER(TRIM(brand)) =  ""TALTZ_PSORIATIC ARTHRITIS""",,,Not Applicable,SIT: Validate SFMC recommendation start date and end date (OMNICHANN-2461)
+47,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select distinct brand,content_category as content,data_source_code,delivery_source,platform,verso_campaign_id from src
+where UPPER(TRIM(brand)) =  ""TALTZ_PSORIATIC ARTHRITIS""",,,Not Applicable,SIT: Validate LOVs in SFMC extract (OMNICHANN-2433)
+48,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select 'FINAL OUTPUT',count(*) from src where upper(brand) = ""TALTZ_PSORIATIC ARTHRITIS""
+UNION
+select 'SUM OF INTERMEDIATE OUTPUT',sum(c) from (
+select count(*) as c from medscape_alert_rheum
+union  
+select count(*) as c from medscape_email_rheum
+union
+select count(*) as c from doximity_alert_rheum
+union  
+select count(*) as c from hq_email_rheum
+union 
+select count(*) as c from medscape_poc_rheum
+union 
+select count(*) as c from doximity_docspot_rheum
+union
+select count(*) from epocrates_alert_rheum
+) a",,,Not Applicable,SIT:Validate # of records in SFMC extract (OMNICHANN-2432)
+62,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,sfmc_count,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select 'sfmc extract' as source, brand as pdt ,concat(data_source_code,' ',platform) as channel,count(*) from src group by brand, data_source_code,platform  having upper(brand) = ""TALTZ_PSORIATIC ARTHRITIS""
+union
+select 'ml out' as source,'Taltz_Psoriatic Arthritis',channel,count(*) from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_out_rheum lateral view explode(mloutput.recommendation) m as ml) ml  where rationale = 'AI_DRIVEN'
+and channel in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_ALERT','MEDSCAPE_EMAIL','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE' group by channel
+order by pdt , channel, source",,,Not Applicable,SIT: Validate SFMC Extract for each brand (OMNICHANN-2463)
+75,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select 'FINAL OUTPUT',count(*) from src where upper(brand) = ""TALTZ_PSORIATIC ARTHRITIS""
+UNION
+select 'SUM OF INTERMEDIATE OUTPUT',sum(c) from (
+select count(*) as c from medscape_alert_rheum
+union  
+select count(*) as c from medscape_email_rheum
+union
+select count(*) as c from doximity_alert_rheum
+union  
+select count(*) as c from hq_email_rheum
+union 
+select count(*) as c from medscape_poc_rheum
+union 
+select count(*) as c from doximity_docspot_rheum
+union
+select count(*) from epocrates_alert_rheum
+) a",,,Not Applicable,SIT: Validate SOA extract to SFMC (OMNICHANN-2460)
+76,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,,Custom_Query,Daily,Inactive,NA,NA,NA,prerequisite condition,"select distinct brand, delivery_source ,platform from src",,,Not Applicable,SIT: Validate SFMC archival (OMNICHANN-2462) 
+86,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select a.cnt1 - b.cnt2 from (
+select 'FINAL OUTPUT',count(*) as cnt1, 1 as joinn from src where brand = ""TALTZ_PSORIATIC ARTHRITIS"")a
+join 
+(
+select 'SUM OF INTERMEDIATE OUTPUT',sum(c) as cnt2, 1 as joinn  from (
+select count(*) as c from medscape_alert_rheum
+union  
+select count(*) as c from medscape_email_rheum
+union
+select count(*) as c from doximity_alert_rheum
+union  
+select count(*) as c from hq_email_rheum
+union 
+select count(*) as c from medscape_poc_rheum
+union 
+select count(*) as c from doximity_docspot_rheum
+union
+select count(*) from epocrates_alert_rheum) a
+) b on a.joinn = b.joinn",,,Error: Issue in # of records in SFMC extract ,Validate # of records in SFMC extract 
+90,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,sfmc_count,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select a.cnt2 - b.cnt1 from
+(select '1' as joinn, count(*) as cnt2 from (select customer_id,ml.`date` as cadence, ml.dimension1 as channel, ml.dimension2 as content,ml.rationale, ml.source from ml_out_rheum
+ lateral view explode(mloutput.recommendation) m as ml) ml  where rationale = 'AI_DRIVEN'
+and channel in ('HQ_EMAIL','DOXIMITY_ALERT','MEDSCAPE_ALERT','MEDSCAPE_EMAIL','EPOCRATES_ALERT','MEDSCAPE_POC','DOXIMITY_DOCSPOT')
+and from_unixtime(unix_timestamp(cadence,'MM/dd/yyyy'),'yyyy-MM-dd') <=  'DQM_CADENCE_END_DATE'
+)a
+join
+(select '1' as joinn, count(*) as cnt1 from src where upper(brand) = ""TALTZ_PSORIATIC ARTHRITIS""
+)b
+on a.joinn = b.joinn",,,Error: Mismatch in # of records in sfmc  Ouput and ML_out,Validate SFMC Extract o/p with ml_out
+91,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/sfmc_extract/union/DQM_CADENCE_START_DATE/,sfmc_post_processing,",",parquet,,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select a1.cnt1 - b1.cnt2 from
+(
+select 'SUM OF INTERMEDIATE OUTPUT',sum(c) as cnt1 , '1' as joinn from (
+select count(*) as c from medscape_alert_rheum
+union  
+select count(*) as c from medscape_email_rheum
+union
+select count(*) as c from doximity_alert_rheum
+union  
+select count(*) as c from hq_email_rheum
+union 
+select count(*) as c from medscape_poc_rheum
+union 
+select count(*) as c from doximity_docspot_rheum
+union
+select count(*) from epocrates_alert_rheum) a
+)a1
+join (
+select 'FINAL OUTPUT',count(*) as cnt2, '1' as joinn from src where upper(brand) = ""TALTZ_PSORIATIC ARTHRITIS"")
+b1
+on a1.joinn = b1.joinn",,,Error: Mismatch in sfmc final Ouput and Intermediate Ouptut,Validate SFMC Extract o/p and I/P
+93,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/suppressed_recommendations/DQM_CADENCE_START_DATE/Job_Id=dynamic_JOB_ID/,tactic_suppressed_recommendations,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'Source_count' as Name,count(*) from tactic_before_suppression s
+union all
+select 'Final_recommendation_count' as Name,count(s.customer_id)
+from random_tactic_assignment s  
+union all
+select  'Dropped_recommendation_count' as name, count(s.customer_id) 
+from src s  ",,,Not Applicable,SIT: Validate TSL (OMNICHANN-0000)
+94,Post,NBA_RHEUM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/NBA_RHEUM/data/Interaction_History_Updated/,interaction_history_updated,",",parquet,,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select *
+from random_tactic_assignment ps
+join
+(
+select ihu.customer_id,ihu.channel_id,ihu.content_id,ihu.content_type_id
+from tactic_before_suppression rta
+left join src ihu
+on rta.customer_id = ihu.customer_id
+and rta.channel_id = ihu.channel_id
+and rta.content_type_id = ihu.content_type_id
+and rta.assigned_tactic = ihu.content_id
+where  cast(first_engagement_date as date) >= date_sub('DQM_CADENCE_START_DATE',28)
+) ite
+on ps.customer_id=ite.customer_id
+and ps.channel_id=ite.channel_id
+and ps.content_type_id=ite.content_type_id
+and ps.assigned_tactic=ite.content_id",,,Not Applicable,SIT: Validate TSL (OMNICHANN-0000)

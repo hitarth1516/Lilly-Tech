@@ -1,0 +1,1514 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_SOA_SENT) as actual_SOA_SENT_cnt,
+count(Veeva_SOA_SENT) as Veeva_SOA_SENT_cnt
+from (
+SELECT   A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.SOA_SENT as actual_SOA_SENT
+		,max(CASE 
+			WHEN B.SOA_SENT IS NULL
+				OR B.SOA_SENT = 0
+				THEN 0
+			ELSE B.SOA_SENT
+			END) AS Veeva_SOA_SENT
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.SOA_SENT, cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+INNER JOIN
+  ( SELECT lilly_person_id AS hcp_id ,
+           B.product_id_m_prod ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS SOA_ENGAGED ,
+           NULL AS P2P ,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_ENGAGED ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_SENT' THEN 1
+                   ELSE 0
+               END) AS SOA_SENT,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_SENT' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_SENT
+   FROM
+     ( SELECT A.* ,
+              m_prod.attr_val AS product_id_m_prod
+      FROM
+(
+SELECT lilly_person_id ,
+                      BRND_EMAIL.indctn AS indication_id ,
+                      actvy_dt AS activity_date ,
+                      CASE
+                          WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                                 'HIBBERT')
+                               AND upper(BRND_EMAIL.platform) IN ('SK&A',
+                                                                  'LILLY SFMC',
+                                                                  'HEALTHLINK SFMC') THEN 'HQ_EMAIL_SENT'
+                          WHEN upper(BRND_EMAIL.data_src_cd) IN ('DOXIMITY',
+                                                                 'MEDSCAPE',
+                                                                 'EPOCRATES',
+                                                                 'DOXIMITY')
+                               AND upper(BRND_EMAIL.platform) IN ('DOCNEWS ALERT',
+                                                                  'BRAND ALERT',
+                                                                  'EMAIL',
+                                                                  'POINT OF CONTACT',
+                                                                  'POC',
+                                                                  'DOCALERT') THEN 'SOA_SENT'
+                          ELSE 'NA'
+                      END AS channel ,
+                      msg_type AS message_type ,
+                      CASE
+                          WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                                 'HIBBERT') THEN concat(""titled "",max(tactic_description),""."")
+                      END AS HQ_TACTIC_TITLE_SENT ,
+                      CASE
+                          WHEN upper(BRND_EMAIL.data_src_cd) NOT IN ('SFMC',
+                                                                     'HIBBERT') THEN concat(""on "",max(primary_category),""."")
+                      END AS CONTENT_CATEGORY_SENT ,
+                      NULL AS HQ_TACTIC_TITLE_ENGAGED ,
+                      NULL AS CONTENT_CATEGORY_ENGAGED ,
+                      NULL AS topic
+         FROM BRAND_SENT_EMAILS BRND_EMAIL
+         LEFT JOIN cap_extract CAP ON tactic_id = CAP.verso_tactic_id
+         WHERE ( upper(actvy_data_type) LIKE '%IMPRESSIONS%'
+                OR upper(actvy_data_type) LIKE '%DELIVERED_EM%'
+                OR upper(actvy_data_type) LIKE '%VIEWS_HEADLINE%'
+                OR upper(actvy_data_type) LIKE '%DELIVERED_AL%'
+                OR upper(actvy_data_type) LIKE '%SENT%')
+           AND upper(actvy_type) LIKE '%IMPRESSION%'
+           AND lilly_person_id IS NOT NULL
+         GROUP BY lilly_person_id ,
+                  actvy_dt ,
+                  BRND_EMAIL.data_src_cd ,
+                  BRND_EMAIL.platform ,
+                  msg_type ,
+                  BRND_EMAIL.indctn ) A
+      INNER JOIN
+        (SELECT attr_val,
+                src_prod_nm
+         FROM M_PROD_XREF
+         WHERE src_nm ='SOA_ACTIVITY_FI') m_prod
+		 ON m_prod.src_prod_nm = upper(A.indication_id)
+		  WHERE A.channel <> 'NA' 
+		  ) B
+   GROUP BY lilly_person_id ,
+            product_id_m_prod ) B ON A.customer_id = B.hcp_id
+AND upper(B.product_id_m_prod) = upper(A.product_id)
+
+ 
+
+group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,A.SOA_sent
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_soa_sent) != count(veeva_soa_sent)
+) m",NA,NA,DTT | INACTIVE | There is a mismatch in between the number SOA sent for any HCPs across any product in the searchable universe in comparision to veeva call2 activity.
+2,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,SOA_SENT , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,SOA_SENT , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where SOA_SENT =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,SOA_SENT
+    )a
+ order by max_days_diff desc
+ limit 1
+ )as b where max_days_diff>180",NA,NA,DTT | INACTIVE | There is an instance of a SOA sent  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+3,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( user_id as string) as user_id
+from insights
+except
+select cast( user_id as string) as user_id
+from src
+)x",NA,NA,DTT | SUBSET | Insights user is not a subset of users file
+4,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( user_id as string) as user_id
+from userorgunitmapping
+except
+select cast(user_id as string) as user_id
+from src
+)x",NA,NA,DTT | SUBSET | user orgunit mapping user is not a subset of users file
+5,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( user_id as string) as user_id
+from activitymetric
+except
+select cast( user_id as string) as user_id
+from src
+)x",NA,NA,DTT | SUBSET | activity metric user is not a subset of users file
+6,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( entity_id as string) as entity_id
+from insightentitymapping
+except
+select cast( CUSTOMER_ID as string) as customer_id
+from src
+)x",NA,NA,DTT |  SUBSET | customer in insight entity mapping is not a subset of customers file
+7,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( CUSTOMER_ID as string) as customer_id
+from customerspecialitymapping
+except
+select cast( CUSTOMER_ID as string) as customer_id
+from src
+)x",NA,NA,DTT | SUBSET | customer speciality mapping customer is not a subset of customers file
+8,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/metrics/,customerproductorgunitnumericmetric,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( CUSTOMER_ID as string) as customer_id
+from src
+except
+select cast( CUSTOMER_ID as string) as customer_id
+from customer
+)x",NA,NA,DTT | SUBSET | primary care file customer is not a subset of customers file
+9,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select cast( CUSTOMER_ID as string) as customer_id
+from customerorgunitmetric
+except
+select cast( CUSTOMER_ID as string) as customer_id
+from src	
+)x",NA,NA,DTT | SUBSET | customer orgunit static customer is not a subset of customer file
+10,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestion/,suggestion,",",parquet,suggestion_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*)
+from src
+where suggestion_id is null ",NA,NA,DTT | NULL | suggestion ID are null
+11,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestioninsightmapping/,suggestioninsightmapping,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select cast( insight_id as string) as insight_id
+from src
+except
+select cast( insight_id as string) as insight_id
+from insights)x",NA,NA,DTT | SUBSET | insight id in  insight suggestion mapping file is not a subset of insight file
+12,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insight_metric/,insightmetrics,",",parquet,insight_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from (select cast( insight_id as string) as insight_id
+from src
+except
+select cast( insight_id as string) as insight_id
+from insights)x",NA,NA,DTT | INACTIVE| insight id in insight metric file is not a subset of insight id in insight file
+13,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,content_id,Custom_Count_Check,Daily,Inactive,NA,NA,NA,prerequisite condition,"select count(*) from (select cast( external_id as string ) as external_id
+from engagementcontent
+except
+select cast( content_id as string ) as content_id
+from src)x",NA,NA,DTT | SUBSET INACTIVE | external_id in engagementcontent file is not a subset of content_id of suggestionengagement file
+14,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestioninsightmapping/,suggestionInsightmapping,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as insight_iD_FALSE from 
+(select distinct(insight_id) from src
+except
+select distinct(insight_id) from insights) as xyz",NA,NA,DTT | SUBSET | suggestionInsightmapping file is not a subset of insight file
+15,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestioninsightmapping/,suggestionInsightmapping,",",parquet,suggestion_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as suggestion_id_FALSE from 
+(select distinct(suggestion_id) from src
+except
+select distinct(suggestion_id) from suggestion) as xyz",NA,NA,DTT | SUBSET | suggestion_id in suggestioninsightmapping is not a subset of orgunit_id in suggestion file
+16,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS orgunit_id_activitymetrics_false from (
+SELECT distinct(orgunit_id) from src
+except
+select distinct(orgunit_id) from orgunit) as orgunit_id_activitymetrics_false_TABLE",NA,NA,DTT | SUBSET | Orgunit_id in activitymetric is not a subset of orgunit_id in orgunit file
+17,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,product_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS product_id_activitymetrics_false from (
+select distinct(product_id) from src
+except
+select distinct(product_id) from product) as product_id_activitymetrics_false_TABLE",NA,NA,DTT | SUBSET | Product_id in activitymetric is not a subset of product_id in product file
+18,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS customer_id_activitymetrics_false from(
+select distinct(customer_id) from src
+except 
+select distinct(customer_id) from customer) as customer_id_activitymetrics_false_TABLE",NA,NA,DTT | SUBSET | customer_id in activitymetric is not a subset of customer_id in customer file
+19,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS user_id_activitymetrics_false from (
+select distinct(user_id) from src
+except
+select distinct(user_id) from user ) as user_id_activitymetrics_false_TABLE",NA,NA,DTT | SUBSET | user_id in activitymetric is not a subset of user_id in user file
+20,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS orgunit_id_customerorgunitmetric_false from ( 
+select distinct(orgunit_id) from src
+except
+select distinct(orgunit_id) from orgunit) AS orgunit_id_customerorgunitmetric_false_TABLE",NA,NA,DTT | SUBSET | Orgunit_id in customerorgunitmetric is not a subset of orgunit_id in orgunit file
+21,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS customer_id_customerorgunitmetric_false from(
+select distinct(customer_id) from src
+except
+select distinct(customer_id) from customer) as customer_id_customerorgunitmetric_false_TABLE",NA,NA,DTT | SUBSET | customer_id in customerorgunitmetric is not a subset of customer_id in customer file
+22,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS customer_id_customerspecialitymapping_false from (
+select distinct(customer_id) from src
+except
+select distinct(customer_id) from customer) as customer_id_customerspecialitymapping_false_TABLE",NA,NA,DTT | SUBSET | customer_id in customerspecialitymapping is not a subset of customer_id in customer file
+23,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS speciality_id_customerspecialitymapping_false from (
+select distinct(speciality_id) from src
+except
+select distinct(speciality_id) from speciality) as speciality_id_customerspecialitymapping_false_TABLE",NA,NA,DTT | SUBSET | speciality_id in customerspecialitymapping is not a subset of speciality_id in speciality file
+24,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/entitydetailsvisualizationconfiguration/,entitydetailsvisualizationconfiguration,",",parquet,time_grain,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"Select count(*) AS time_grain_entitydetailsvisualizationconfiguration_false from 
+(select distinct(time_grain) from src
+except
+select distinct(GRAIN_TYPE) from timedata) 
+as time_grain_entitydetailsvisualizationconfiguration_false_table",NA,NA,DTT | SUBSET | time_grain in entitydetailsvisualizationconfiguration is not a subset of time_grain in timedata file
+25,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insightentitymapping/,insightentitymapping,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS insight_id_insightentitymapping_false from (
+select distinct(insight_id) from src
+except
+select distinct(insight_id) from insights) as insight_id_insightentitymapping_false_table",NA,NA,DTT | SUBSET | insight_id in insightentitymapping is not a subset of insight_id in insights file
+26,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insight_metric/,insightmetrics,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS insight_id_insightmetrics_false from(
+select distinct(insight_id) from src
+except
+select distinct(insight_id) from insights) as insight_id_insightmetrics_false_table",NA,NA,DTT | SUBSET | insight_id in insightmetric is not a subset of insight_id in insights file
+27,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insightentitymapping/,insightentitymapping,",",parquet,entity_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) AS entity_id_insightentitymapping_false from(
+select distinct(entity_id ) from src
+except
+select distinct(customer_id) from customer ) as entity_id_insightentitymapping_false_table",NA,NA,DTT | SUBSET | entity_id in insightentitymapping is not a subset of customer_id in customer file
+28,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where Orgunit_Id IS NULL or Product_Id IS NULL or Customer_Id IS NULL or User_Id IS NULL or Time_Id IS NULL or SalesForce_Id IS NULL,NA,NA,DTT | NULL | Orgunit_Id or Product_Id or Customer_Id or User_Id or Time_Id or SalesForce_Id IS NULL
+29,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT from src where salesforce_id is null or orgunit_id is null,NA,NA,DTT | NULL | salesforce_id is null
+30,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,Customer_Id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT from src where Customer_Id is null or customer_type is null or PDRP_Display_Flag is null or Display_Customer_Name is null or Is_Deleted is null,NA,NA,DTT | NULL | Customer_Id is null
+31,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerspecialitymapping/,customerspecialitymapping,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT from src where Customer_Id is null or speciality_id is null,NA,NA,DTT | NULL | Customer_Id is null
+32,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/filterconfiguration/,filterconfiguration,",",parquet,Filter_section_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,SELECT COUNT(*) AS NULL_COUNT FROM src WHERE Filter_section_id IS NULL,NA,NA,DTT | NULL | Filter_section_id IS NULL
+33,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insight/,insight,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT from src where insight_id IS NULL or insight_text IS NULL or expiry_date IS NULL or generation_date IS NULL,NA,NA,DTT | NULL | insight_id or insight_text or expiry_date or generation_date IS NULL
+34,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/cyclerunconfiguration/,cyclerunconfiguration,",",parquet,external_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition," select count(*) as NULL_COUNT from src where external_id IS NULL or start_date IS NULL
+or end_date IS NULL or is_primary IS NULL or salesforce_id IS NULL",NA,NA,DTT | NULL | external_id or start_date or end_date or is_primary or salesforce_id IS NULL
+35,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/entitydetailsvisualizationconfiguration/,entitydetailsvisualizationconfiguration,",",parquet,Entity_Type,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src WHERE Entity_Type IS NULL,NA,NA,DTT | NULL | Entity_Type IS NULL
+36,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/metricgrainmapping/,metricgrainmapping,",",parquet,grain,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where grain is null or metric_name is null or is_deleted is null,NA,NA,DTT | NULL | grain or metric_name or is_deleted is null
+37,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerorgunitmetric/,customerorgunitmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where orgunit_id is null or customer_id is null or salesforce_id is null,NA,NA,DTT | NULL | orgunit_id or customer_id or salesforce_id is null
+38,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/orgunit/,orgunit,",",parquet,name,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT from src where name is null,NA,NA,DTT | NULL | name is null
+39,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/product/,product,",",parquet,product_name,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT from src where product_name is null or product_level_id is null,NA,NA,DTT | NULL | product_name or product_level_id is null
+40,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/speciality/,speciality,",",parquet,speciality_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as null_count from src where speciality_id is null,NA,NA,DTT | NULL | speciality_id is null
+41,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,hcp_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where hcp_id is null or cadence is null or channel_id is null or generated_date is null,NA,NA,DTT | NULL | hcp_id or cadence or channel_id or generated_date is null
+42,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestion/,suggestion,",",parquet,suggestion_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where suggestion_id is null or suggestion_type_id is null,NA,NA,DTT | NULL | suggestion_id or suggestion_type_id is null
+43,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestioninsightmapping/,suggestioninsightmapping,",",parquet,suggestion_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where suggestion_id is null or insight_id is null,NA,NA,DTT | NULL | suggestion_id or insight_id is null
+44,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/timedata/,timedata,",",parquet,start_date,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,"select count(*) as NULL_COUNT FROM src where start_date is null or end_date is null
+or grain_type is null or is_deleted is null or display_name is null",NA,NA,DTT | NULL | start_date or end_date or grain_type or is_deleted or display_name is null
+45,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/user/,user,",",parquet,user_login,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where user_login is null or name is null or locale_key is null or role is null or is_deleted is null,NA,NA,DTT | NULL | user_login or name or locale_key or role or is_deleted is null
+46,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/userorgunitmapping/,userorgunitmapping,",",parquet,user_orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where user_orgunit_id is null,NA,NA,DTT | NULL | user_orgunit_id is null
+47,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/userfilterconfigurationmapping/,userfilterconfigurationmapping,",",parquet,user_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) as NULL_COUNT FROM src where user_id is null or filterconfiguration_id is null,NA,NA,DTT | NULL | user_id or filterconfiguration_id is null
+48,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insightentitymapping/,insightentitymapping,",",parquet,entity_type,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,"select count(*) as NULL_COUNT from src where insight_id IS NULL or entity_type IS NULL
+or entity_id IS NULL",NA,NA,DTT | NULL | insight_id or entity_type or entity_id IS NULL
+49,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,f2f_call , start_date, end_date, max_days_diff
+from
+(
+    select orgunit_id, customer_id, salesforce_id, user_id, f2f_call , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where f2f_call =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id, f2f_call
+)c
+ order by max_days_diff desc
+ limit 1)
+as d where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a F2F call made for any HCPs across any product in the searchable universe which exceed 180 days time period.
+50,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,SAMPLE_DROPPED , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,SAMPLE_DROPPED , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where SAMPLE_DROPPED =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,SAMPLE_DROPPED
+    )a
+ order by max_days_diff desc
+ limit 1)as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a sample dropped made for any HCPs across any product in the searchable universe which exceed 180 days time period.
+51,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,VAE_SENT , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,VAE_SENT , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where VAE_SENT =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,VAE_SENT
+    )a
+ order by max_days_diff desc
+ limit 1)
+  as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a sent VAE  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+52,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,VAE_ENGAGED , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,VAE_ENGAGED , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where VAE_ENGAGED =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,VAE_ENGAGED
+    )a
+ order by max_days_diff desc
+ limit 1)
+ as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a VAE engaged  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+53,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,HQ_EMAIL_ENGAGED , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,HQ_EMAIL_ENGAGED , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where HQ_EMAIL_ENGAGED =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,HQ_EMAIL_ENGAGED
+    )a
+ order by max_days_diff desc
+ limit 1)
+ as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a HQ Email engaged  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+54,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,SOA_ENGAGED , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,SOA_ENGAGED , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where SOA_ENGAGED =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,SOA_ENGAGED
+    )a
+ order by max_days_diff desc
+ limit 1)as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a SOA engaged  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+55,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id,HQ_EMAIL_SENT , start_date, end_date, max_days_diff
+from(
+    select orgunit_id, customer_id, salesforce_id, user_id,HQ_EMAIL_SENT , min(start_date) as start_date, min(end_date) as end_date,
+    datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+     where HQ_EMAIL_SENT =1 
+    group by orgunit_id, customer_id, salesforce_id, user_id,HQ_EMAIL_SENT
+    )a
+ order by max_days_diff desc
+ limit 1
+ )as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a HQ Email sent  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+56,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select distinct orgunit_id,Salesforce_id, salesforce_id, user_id, P2P , start_date, end_date, max_days_diff
+		from(
+		select orgunit_id, customer_id, salesforce_id, user_id,P2P , min(start_date) as start_date, min(end_date) as end_date,
+		datediff(max(start_date),min(start_date)) as max_days_diff  from src a left join timedata b on a.time_id=b.time_id 
+		where P2P =1 
+		group by orgunit_id, customer_id, salesforce_id, user_id,P2P
+		)a
+ order by max_days_diff desc
+ limit 1)
+ as b where max_days_diff>180",NA,NA,DTT | TEST | There is an instance of a P2P interaction  for any HCPs across any product in the searchable universe which exceed 180 days time period.
+57,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customer/,customer,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select  a.customer_id, display_customer_name, 
+nvl(concat(substr(vc.name,instr(vc.name,' ')+1),', ',SUBSTR(vc.name,1,instr(vc.name,' '))),'ZZZ') as 
+veeva_customer_name from src a 
+left join 
+(select * from (select *, row_number() over(partition by person_id__c order by lastmodifieddate desc) as rnk 
+from LDG_VEEVA_ACCOUNTS where person_id__c is not null) a where rnk = 1) vc 
+on a.customer_id=vc.person_id__c ) A
+where trim(A.display_customer_name) != trim(A.veeva_customer_name)",NA,NA,DTT | TEST | There is a mismatch in between FI output customer name and veeva_customer_name
+58,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select customer_id, rep_id, count(*) as insight_count
+from src
+where call_sequencing ='P1' and expiry_date>current_date
+group by customer_id, rep_id HAVING insight_count > 3)o",NA,NA,DTT | TEST | P1 insight_count > 3
+59,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select customer_id, rep_id, count(*) as insight_count
+from src
+where call_sequencing ='P2' and expiry_date>current_date
+group by customer_id, rep_id HAVING insight_count > 2) n",NA,NA,DTT | TEST | P2 insight_count > 2
+60,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select customer_id, rep_id, count(*) as insight_count
+from src
+where insight_type ='PORTFOLIO' and expiry_date>current_date
+group by customer_id, rep_id HAVING insight_count > 1)h",NA,NA,DTT | TEST |  Porfolio insight_count > 1
+61,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select customer_id, rep_id, count(*) as insight_count
+from src
+where call_sequencing ='P3' and expiry_date>current_date
+group by customer_id, rep_id HAVING insight_count > 0)k",NA,NA,DTT | TEST |  P3 insight_count > 4
+62,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct orgunit_id
+from src
+except
+select distinct orgunit_id
+from alignment) x",NA,NA,DTT | SUBSET | orgunit_id in post_processing file is not a subset of id in alignment file
+63,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,rep_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct rep_id
+from src
+except
+select distinct id
+from LDG_VEEVA_USERS)x",NA,NA,DTT | SUBSET | rep_id in post_processing file is not a subset of id in  LDG_VEEVA_USERS file
+64,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_f2f_call) as actual_f2f_call_cnt,
+count(veeva_F2F_call) as veeva_F2F_call_cnt
+from (
+SELECT A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.f2f_call as actual_f2f_call
+		,Date1
+		,max(CASE 
+			WHEN B.F2F_CALL IS NULL
+				OR B.F2F_CALL = 0
+				THEN 0
+			ELSE B.F2F_CALL
+			END) AS veeva_F2F_call
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.f2f_call, cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+	
+    INNER JOIN (
+		SELECT DISTINCT hcp_id
+			,owner_id
+			,CAST(Date1 AS DATE) AS Date1
+			,D.external_id_vod__c AS product_id
+			,CASE 
+				WHEN upper(call_type_vod__c) IN ('DETAIL ONLY', 'DETAIL WITH SAMPLE')
+					THEN 1
+				ELSE 0
+				END AS F2F_Call
+			,CASE 
+				WHEN upper(call_type_vod__c) IN ('SAMPLE ONLY', 'DETAIL WITH SAMPLE')
+					THEN 1
+				ELSE 0
+				END AS Sample_Dropped
+		FROM (
+			SELECT b.person_id__c AS hcp_id
+				,g.call_date_vod__c AS Date1
+				,g.id
+				,g.owner_id
+				,g.call_type_vod__c
+			FROM (
+				SELECT account_vod__c
+					,call_date_vod__c
+					,id
+					,ownerid AS owner_id
+					,call_type_vod__c
+				FROM LDG_VEEVA_CALL2
+				WHERE UPPER(STATUS_VOD__C) = 'SUBMITTED_VOD'
+					AND account_vod__c IS NOT NULL
+				) g
+			INNER JOIN LDG_VEEVA_ACCOUNTS b ON upper(trim(g.account_vod__c)) = upper(trim(b.id))
+			WHERE b.person_id__c IS NOT NULL
+			) A
+		LEFT JOIN LDG_VEEVA_CALL2_DTL c ON upper(trim(A.id)) = upper(trim(c.call2_vod__c))
+		INNER JOIN LDG_VEEVA_PROD D ON upper(c.product_vod__c) = upper(D.id) 
+		) B
+        on A.customer_id = B.hcp_id and A.user_id = B.owner_id and substr(trim(A.product_id),1,9) = B.product_id
+        group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,Date1,A.f2f_call
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_f2f_call) != count(veeva_F2F_call)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number F2F calls for any HCPs across any product in the searchable universe in comparision to veeva call2 activity.
+65,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_sample_dropped) as actual_sample_dropped_cnt,
+count(Veeva_sample_dropped) as Veeva_sample_dropped_cnt
+from (
+SELECT A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.sample_dropped as actual_sample_dropped
+		,Date1
+		,max(CASE 
+			WHEN B.SAMPLE_DROPPED IS NULL
+				OR B.SAMPLE_DROPPED = 0
+				THEN 0
+			ELSE B.SAMPLE_DROPPED
+			END) AS Veeva_sample_dropped
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.sample_dropped, cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+	
+    INNER JOIN (
+		SELECT DISTINCT hcp_id
+			,owner_id
+			,CAST(Date1 AS DATE) AS Date1
+			,D.external_id_vod__c AS product_id
+			,CASE 
+				WHEN upper(call_type_vod__c) IN ('DETAIL ONLY', 'DETAIL WITH SAMPLE')
+					THEN 1
+				ELSE 0
+				END AS F2F_Call
+			,CASE 
+				WHEN upper(call_type_vod__c) IN ('SAMPLE ONLY', 'DETAIL WITH SAMPLE')
+					THEN 1
+				ELSE 0
+				END AS Sample_Dropped
+		FROM (
+			SELECT b.person_id__c AS hcp_id
+				,g.call_date_vod__c AS Date1
+				,g.id
+				,g.owner_id
+				,g.call_type_vod__c
+			FROM (
+				SELECT account_vod__c
+					,call_date_vod__c
+					,id
+					,ownerid AS owner_id
+					,call_type_vod__c
+				FROM LDG_VEEVA_CALL2
+				WHERE UPPER(STATUS_VOD__C) = 'SUBMITTED_VOD'
+					AND account_vod__c IS NOT NULL
+				) g
+			INNER JOIN LDG_VEEVA_ACCOUNTS b ON upper(trim(g.account_vod__c)) = upper(trim(b.id))
+			WHERE b.person_id__c IS NOT NULL
+			) A
+		LEFT JOIN LDG_VEEVA_CALL2_DTL c ON upper(trim(A.id)) = upper(trim(c.call2_vod__c))
+		INNER JOIN LDG_VEEVA_PROD D ON upper(c.product_vod__c) = upper(D.id) 
+		) B
+        on A.customer_id = B.hcp_id and A.user_id = B.owner_id and substr(trim(A.product_id),1,9) = B.product_id
+        group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,Date1,A.sample_dropped
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_sample_dropped) != count(veeva_sample_dropped)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number sample dropped for any HCPs across any product in the searchable universe in comparision to veeva call2 activity.
+66,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_vae_sent) as actual_vae_sent_cnt,
+count(Veeva_vae_sent) as Veeva_vae_sent_cnt
+from (
+SELECT A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.vae_sent as actual_vae_sent
+		,Date1
+		,max(CASE 
+			WHEN B.vae_sent IS NULL
+				OR B.vae_sent = 0
+				THEN 0
+			ELSE B.vae_sent
+			END) AS Veeva_vae_sent
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.vae_sent, cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+	
+    INNER JOIN (
+		SELECT DISTINCT person_id__c AS hcp_id,
+                ownerid AS owner_id,
+                cast(substr(activity_datetime_vod__c, 1, 10) AS DATE) AS date1,
+                product_id,
+                CASE
+                    WHEN upper(event_type_vod__c) IN ('DELIVERED_VOD') THEN 1
+                    ELSE 0
+                END AS VAE_SENT,
+                CASE
+                    WHEN upper(event_type_vod__c) IN ('CLICKED_VOD',
+                                                      'DOWNLOADED_VOD',
+                                                      'VIEWED_VOD') THEN 1
+                    ELSE 0
+                END AS VAE_ENGAGED
+FROM
+  (SELECT event_type_vod__c,
+          activity_datetime_vod__c,
+          B.product,
+          B.ownerid,
+          B.tactic_name,
+          C.person_id__c,
+          D.external_id_vod__c AS product_id
+   FROM
+     (SELECT account_vod__c,
+             activity_datetime_vod__c,
+             event_type_vod__c,
+             product,
+             ownerid,
+             max(tactic_name) as tactic_name,
+             product_vod__c
+      FROM
+        (SELECT account_vod__c,
+                event_type_vod__c,
+                cast(substr(activity_datetime_vod__c, 1, 10) AS DATE) AS activity_datetime_vod__c,
+                B.product_display_vod__c AS product,
+                B.product_vod__c,
+                B.ownerid,
+                B.tactic_name,
+                B.id
+         FROM
+           (SELECT *
+            FROM LDG_VEEVA_EMAIL_ACTIVITY) AS A
+         INNER JOIN
+           (SELECT a.*,
+                   c.*
+            FROM LDG_VEEVA_SENT_EMAIL a
+            INNER JOIN LDG_VEEVA_APV_DOC b ON a.approved_email_template_vod__c = b.id
+            INNER JOIN EDB_XREF c ON b.vault_document_id_vod__c = c.document_id
+            WHERE upper(a.status_vod__c) = 'DELIVERED_VOD' ) AS B ON A.sent_email_vod__c = B.id) P
+      GROUP BY account_vod__c,
+               activity_datetime_vod__c,
+               event_type_vod__c,
+               product,
+               ownerid,
+               product_vod__c) B
+   INNER JOIN LDG_VEEVA_ACCOUNTS AS C ON B.account_vod__c = C.id
+   INNER JOIN LDG_VEEVA_PROD D ON upper(B.product_vod__c) = upper(D.id)) A
+    WHERE upper(product) IN
+    (SELECT tgt_prod_nm
+     FROM M_PROD_XREF
+     WHERE src_nm  = 'TEAM_RESP_CD'
+       AND attr_val IN
+         (SELECT DISTINCT product_id
+          FROM REP_ALIGNMENT)
+       AND actv = 'Y'
+       AND tgt_prod_nm IS NOT NULL
+				)
+		) B
+        on A.customer_id = B.hcp_id and A.user_id = B.owner_id and substr(trim(A.product_id),1,9) = B.product_id
+        group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,Date1,A.vae_sent
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_vae_sent) != count(veeva_vae_sent)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number VAE sent for any HCPs across any product in the searchable universe in comparision to veeva call2 activity
+67,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_hq_email_sent) as actual_hq_email_sent_cnt,
+count(Veeva_hq_email_sent) as Veeva_hq_email_sent_cnt
+from (
+SELECT   A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.hq_email_sent as actual_hq_email_sent
+		,max(CASE 
+			WHEN B.hq_email_sent IS NULL
+				OR B.hq_email_sent = 0
+				THEN 0
+			ELSE B.hq_email_sent
+			END) AS Veeva_hq_email_sent
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.hq_email_sent , cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+INNER JOIN
+  ( SELECT lilly_person_id AS hcp_id ,
+           B.product_id_m_prod ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS SOA_ENGAGED ,
+           NULL AS P2P ,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_ENGAGED ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_SENT' THEN 1
+                   ELSE 0
+               END) AS SOA_SENT,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_SENT' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_SENT
+   FROM
+     ( SELECT A.* ,
+              m_prod.attr_val AS product_id_m_prod
+      FROM
+(
+SELECT lilly_person_id ,
+                      BRND_EMAIL.indctn AS indication_id ,
+                      actvy_dt AS activity_date ,
+                      CASE
+                          WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                                 'HIBBERT')
+                               AND upper(BRND_EMAIL.platform) IN ('SK&A',
+                                                                  'LILLY SFMC',
+                                                                  'HEALTHLINK SFMC') THEN 'HQ_EMAIL_SENT'
+                          WHEN upper(BRND_EMAIL.data_src_cd) IN ('DOXIMITY',
+                                                                 'MEDSCAPE',
+                                                                 'EPOCRATES',
+                                                                 'DOXIMITY')
+                               AND upper(BRND_EMAIL.platform) IN ('DOCNEWS ALERT',
+                                                                  'BRAND ALERT',
+                                                                  'EMAIL',
+                                                                  'POINT OF CONTACT',
+                                                                  'POC',
+                                                                  'DOCALERT') THEN 'SOA_SENT'
+                          ELSE 'NA'
+                      END AS channel ,
+                      msg_type AS message_type ,
+                      CASE
+                          WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                                 'HIBBERT') THEN concat(""titled "",max(tactic_description),""."")
+                      END AS HQ_TACTIC_TITLE_SENT ,
+                      CASE
+                          WHEN upper(BRND_EMAIL.data_src_cd) NOT IN ('SFMC',
+                                                                     'HIBBERT') THEN concat(""on "",max(primary_category),""."")
+                      END AS CONTENT_CATEGORY_SENT ,
+                      NULL AS HQ_TACTIC_TITLE_ENGAGED ,
+                      NULL AS CONTENT_CATEGORY_ENGAGED ,
+                      NULL AS topic
+         FROM BRAND_SENT_EMAILS BRND_EMAIL
+         LEFT JOIN CAP_EXTRACT CAP ON tactic_id = CAP.verso_tactic_id
+         WHERE ( upper(actvy_data_type) LIKE '%IMPRESSIONS%'
+                OR upper(actvy_data_type) LIKE '%DELIVERED_EM%'
+                OR upper(actvy_data_type) LIKE '%VIEWS_HEADLINE%'
+                OR upper(actvy_data_type) LIKE '%DELIVERED_AL%'
+                OR upper(actvy_data_type) LIKE '%SENT%')
+           AND upper(actvy_type) LIKE '%IMPRESSION%'
+           AND lilly_person_id IS NOT NULL
+         GROUP BY lilly_person_id ,
+                  actvy_dt ,
+                  BRND_EMAIL.data_src_cd ,
+                  BRND_EMAIL.platform ,
+                  msg_type ,
+                  BRND_EMAIL.indctn ) A
+      INNER JOIN
+        (SELECT attr_val,
+                src_prod_nm
+         FROM M_PROD_XREF
+         WHERE src_nm ='SOA_ACTIVITY_FI') m_prod
+		 ON m_prod.src_prod_nm = upper(A.indication_id)
+		  WHERE A.channel <> 'NA' 
+		  ) B
+   GROUP BY lilly_person_id ,
+            product_id_m_prod ) B ON A.customer_id = B.hcp_id
+AND upper(B.product_id_m_prod) = upper(A.product_id)
+
+group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,A.hq_email_sent
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_hq_email_sent) != count(veeva_hq_email_sent)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number HQ Email sent for any HCPs across any product in the searchable universe in comparision to veeva call2 activity
+68,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_SOA_ENGAGED) as actual_SOA_ENGAGED_cnt,
+count(Veeva_SOA_ENGAGED) as Veeva_SOA_ENGAGED_cnt
+from (
+SELECT   A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.SOA_ENGAGED as actual_SOA_ENGAGED
+		,max(CASE 
+			WHEN B.SOA_ENGAGED IS NULL
+				OR B.SOA_ENGAGED = 0
+				THEN 0
+			ELSE B.SOA_ENGAGED
+			END) AS Veeva_SOA_ENGAGED
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.SOA_ENGAGED, cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+INNER JOIN
+(
+SELECT lilly_person_id AS hcp_id ,
+           B.product_id_m_prod ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS SOA_ENGAGED ,
+           NULL AS P2P ,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_ENGAGED ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_SENT' THEN 1
+                   ELSE 0
+               END) AS SOA_SENT,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_SENT' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_SENT
+   FROM
+     ( SELECT A.* ,
+              m_prod.attr_val AS product_id_m_prod
+      FROM
+        ( SELECT lilly_person_id ,
+                 BRND_EMAIL.indctn AS indication_id ,
+                 actvy_dt AS activity_date ,
+                 CASE
+                     WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                            'HIBBERT')
+                          AND upper(BRND_EMAIL.platform) IN ('SK&A',
+                                                             'LILLY SFMC',
+                                                             'HEALTHLINK SFMC') THEN 'HQ_EMAIL_ENGAGED'
+                     WHEN upper(BRND_EMAIL.data_src_cd) IN ('DOXIMITY',
+                                                            'MEDSCAPE',
+                                                            'EPOCRATES',
+                                                            'DOXIMITY')
+                          AND upper(BRND_EMAIL.platform) IN ('DOCNEWS ALERT',
+                                                             'BRAND ALERT',
+                                                             'EMAIL',
+                                                             'POINT OF CONTACT',
+                                                             'POC',
+                                                             'DOCALERT') THEN 'SOA_ENGAGED'
+                     ELSE 'NA'
+                 END AS channel ,
+                 msg_type AS message_type ,
+                 NULL AS HQ_TACTIC_TITLE_SENT ,
+                 NULL AS CONTENT_CATEGORY_SENT ,
+                 CASE
+                     WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                            'HIBBERT') THEN concat(""titled "",max(tactic_description),""."")
+                 END AS HQ_TACTIC_TITLE_ENGAGED ,
+                 CASE
+                     WHEN upper(BRND_EMAIL.data_src_cd) NOT IN ('SFMC',
+                                                                'HIBBERT') THEN concat(""on "",max(primary_category),""."")
+                 END AS CONTENT_CATEGORY_ENGAGED ,
+                 NULL AS topic
+         FROM BRAND_SENT_EMAILS BRND_EMAIL
+         LEFT JOIN CAP_EXTRACT CAP ON tactic_id = CAP.verso_tactic_id
+         WHERE ( upper(actvy_data_type) LIKE '%CLICK%'
+                OR upper(actvy_data_type) LIKE '%OPEN%'
+                OR upper(actvy_data_type) LIKE '%ASSET_START_INTERACTION%' )
+           AND upper(actvy_type) LIKE '%ENGAGEMENT%'
+           AND lilly_person_id IS NOT NULL
+         GROUP BY lilly_person_id ,
+                  actvy_dt ,
+                  BRND_EMAIL.data_src_cd ,
+                  BRND_EMAIL.platform ,
+                  msg_type ,
+                  BRND_EMAIL.indctn
+			) A
+      INNER JOIN
+        (SELECT attr_val,
+                src_prod_nm
+         FROM M_PROD_XREF
+         WHERE src_nm ='SOA_ACTIVITY_FI') m_prod
+		 ON m_prod.src_prod_nm = upper(A.indication_id)
+		  WHERE A.channel <> 'NA' 
+		  ) B
+   GROUP BY lilly_person_id ,
+            product_id_m_prod ) B ON A.customer_id = B.hcp_id
+AND upper(B.product_id_m_prod) = upper(A.product_id)
+
+group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,A.SOA_ENGAGED
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_SOA_ENGAGED) != count(veeva_SOA_ENGAGED)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number SOA engaged for any HCPs across any product in the searchable universe in comparision to veeva call2 activity
+69,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_hq_email_engaged) as actual_hq_email_engaged_cnt,
+count(Veeva_hq_email_engaged) as Veeva_hq_email_engaged_cnt
+from (
+SELECT   A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.hq_email_engaged as actual_hq_email_engaged
+		,max(CASE 
+			WHEN B.hq_email_engaged IS NULL
+				OR B.hq_email_engaged = 0
+				THEN 0
+			ELSE B.hq_email_engaged
+			END) AS Veeva_hq_email_engaged 
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.hq_email_engaged , cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+INNER JOIN
+(
+SELECT lilly_person_id AS hcp_id ,
+           B.product_id_m_prod ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS SOA_ENGAGED ,
+           NULL AS P2P ,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_ENGAGED' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_ENGAGED ,
+           max(CASE
+                   WHEN upper(channel) = 'SOA_SENT' THEN 1
+                   ELSE 0
+               END) AS SOA_SENT,
+           max(CASE
+                   WHEN upper(channel) = 'HQ_EMAIL_SENT' THEN 1
+                   ELSE 0
+               END) AS HQ_EMAIL_SENT
+   FROM
+     ( SELECT A.* ,
+              m_prod.attr_val AS product_id_m_prod
+      FROM
+        ( SELECT lilly_person_id ,
+                 BRND_EMAIL.indctn AS indication_id ,
+                 actvy_dt AS activity_date ,
+                 CASE
+                     WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                            'HIBBERT')
+                          AND upper(BRND_EMAIL.platform) IN ('SK&A',
+                                                             'LILLY SFMC',
+                                                             'HEALTHLINK SFMC') THEN 'HQ_EMAIL_ENGAGED'
+                     WHEN upper(BRND_EMAIL.data_src_cd) IN ('DOXIMITY',
+                                                            'MEDSCAPE',
+                                                            'EPOCRATES',
+                                                            'DOXIMITY')
+                          AND upper(BRND_EMAIL.platform) IN ('DOCNEWS ALERT',
+                                                             'BRAND ALERT',
+                                                             'EMAIL',
+                                                             'POINT OF CONTACT',
+                                                             'POC',
+                                                             'DOCALERT') THEN 'SOA_ENGAGED'
+                     ELSE 'NA'
+                 END AS channel ,
+                 msg_type AS message_type ,
+                 NULL AS HQ_TACTIC_TITLE_SENT ,
+                 NULL AS CONTENT_CATEGORY_SENT ,
+                 CASE
+                     WHEN upper(BRND_EMAIL.data_src_cd) IN ('SFMC',
+                                                            'HIBBERT') THEN concat(""titled "",max(tactic_description),""."")
+                 END AS HQ_TACTIC_TITLE_ENGAGED ,
+                 CASE
+                     WHEN upper(BRND_EMAIL.data_src_cd) NOT IN ('SFMC',
+                                                                'HIBBERT') THEN concat(""on "",max(primary_category),""."")
+                 END AS CONTENT_CATEGORY_ENGAGED ,
+                 NULL AS topic
+         FROM BRAND_SENT_EMAILS BRND_EMAIL
+         LEFT JOIN CAP_EXTRACT CAP ON tactic_id = CAP.verso_tactic_id
+         WHERE ( upper(actvy_data_type) LIKE '%CLICK%'
+                OR upper(actvy_data_type) LIKE '%OPEN%'
+                OR upper(actvy_data_type) LIKE '%ASSET_START_INTERACTION%' )
+           AND upper(actvy_type) LIKE '%ENGAGEMENT%'
+           AND lilly_person_id IS NOT NULL
+         GROUP BY lilly_person_id ,
+                  actvy_dt ,
+                  BRND_EMAIL.data_src_cd ,
+                  BRND_EMAIL.platform ,
+                  msg_type ,
+                  BRND_EMAIL.indctn
+			) A
+      INNER JOIN
+        (SELECT attr_val,
+                src_prod_nm
+         FROM M_PROD_XREF
+         WHERE src_nm ='SOA_ACTIVITY_FI') m_prod
+		 ON m_prod.src_prod_nm = upper(A.indication_id)
+		  WHERE A.channel <> 'NA' 
+		  ) B
+   GROUP BY lilly_person_id ,
+            product_id_m_prod ) B ON A.customer_id = B.hcp_id
+AND upper(B.product_id_m_prod) = upper(A.product_id)
+
+group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,A.hq_email_engaged
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_hq_email_engaged) != count(veeva_hq_email_engaged)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number HQ Email engaged for any HCPs across any product in the searchable universe in comparision to veeva call2 activity
+70,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_p2p) as actual_p2p_cnt,
+count(Veeva_p2p) as Veeva_p2p_cnt
+from (
+SELECT   A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.activty_date
+		,A.p2p as actual_p2p
+		,max(CASE 
+			WHEN B.p2p IS NULL
+				OR B.p2p = 0
+				THEN 0
+			ELSE B.p2p
+			END) AS Veeva_p2p 
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.p2p , cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+INNER JOIN
+(
+SELECT lilly_person_id AS hcp_id
+		,TOPIC
+		,activity_date
+		,max(CASE 
+				WHEN upper(channel) = 'P2P'
+					THEN 1
+				ELSE 0
+				END) AS P2P
+		,m_prod.attr_val as attr_val
+	FROM (
+		SELECT *
+		FROM (
+			SELECT p2p_activity.*
+			FROM (
+				SELECT HCP_ID AS lilly_person_id
+					,from_unixtime(unix_timestamp(ACTVY_STRT_DT, 'yyyy-MM-dd'), 'yyyy-MM-dd') AS activity_date
+					,'P2P' AS channel
+					,'' AS message_type
+					,NULL AS HQ_TACTIC_TITLE_ENGAGED
+					,NULL AS HQ_TACTIC_TITLE_SENT
+					,NULL AS CONTENT_CATEGORY_ENGAGED
+					,NULL AS CONTENT_CATEGORY_SENT
+					,CONCAT(""on "",max(topic),""."") as topic
+					,BRND_DISEASE_STATE
+				FROM P2P_SPEAKER_PROGRAMS
+				WHERE HCP_ID IS NOT NULL
+					AND length(HCP_ID) = 11
+					AND upper(BRND_DISEASE_STATE) IN (select src_prod_nm from M_PROD_XREF where src_nm ='P2P_ACTIVITY_FI')
+					AND UPPER(TRIM(ATTENDED)) = 'YES'
+					AND UPPER(TRIM(ATTENDEE_TYPE)) = 'HCP'
+				GROUP BY HCP_ID
+					,ACTVY_STRT_DT
+					,BRND_DISEASE_STATE
+				) AS p2p_activity
+			WHERE p2p_activity.channel <> 'NA'
+			) p2p_final
+		) B
+		LEFT JOIN (select src_prod_nm,attr_val from M_PROD_XREF 
+		where src_nm ='P2P_ACTIVITY_FI') m_prod 
+		on m_prod.src_prod_nm = upper(B.BRND_DISEASE_STATE)
+	GROUP BY lilly_person_id
+		,TOPIC
+		,activity_date
+		,attr_val
+		) B
+		ON A.customer_id = B.hcp_id
+			AND B.attr_val = A.product_id AND A.activty_date=B.activity_date
+			group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,A.p2p,A.activty_date
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_p2p) != count(veeva_p2p)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number P2P interaction for any HCPs across any product in the searchable universe in comparision to veeva call2 activity
+71,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/activitymetric/,activitymetric,",",parquet,orgunit_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+(select orgunit_id, 
+customer_id,
+salesforce_id,
+user_id,
+count(actual_vae_engaged) as actual_vae_engaged_cnt,
+count(Veeva_vae_engaged) as Veeva_vae_engaged_cnt
+from (
+SELECT A.orgunit_id
+		,A.customer_id
+		,upper(A.salesforce_id) AS salesforce_id
+		,A.user_id
+		,A.vae_engaged as actual_vae_engaged
+		,Date1
+		,max(CASE 
+			WHEN B.vae_engaged IS NULL
+				OR B.vae_engaged = 0
+				THEN 0
+			ELSE B.vae_engaged
+			END) AS Veeva_vae_engaged
+	FROM 
+	(select  a.orgunit_id,	a.product_id,	a.customer_id,	a.salesforce_id,	a.user_id,
+a.vae_engaged, cast(b.end_date as date) as activty_date from src as a
+left join
+timedata as b on a.time_id=b.time_id
+) A
+	
+    INNER JOIN (
+		SELECT DISTINCT person_id__c AS hcp_id,
+                ownerid AS owner_id,
+                cast(substr(activity_datetime_vod__c, 1, 10) AS DATE) AS date1,
+                product_id,
+                CASE
+                    WHEN upper(event_type_vod__c) IN ('DELIVERED_VOD') THEN 1
+                    ELSE 0
+                END AS VAE_SENT,
+                CASE
+                    WHEN upper(event_type_vod__c) IN ('CLICKED_VOD',
+                                                      'DOWNLOADED_VOD',
+                                                      'VIEWED_VOD') THEN 1
+                    ELSE 0
+                END AS VAE_ENGAGED
+FROM
+  (SELECT event_type_vod__c,
+          activity_datetime_vod__c,
+          B.product,
+          B.ownerid,
+          B.tactic_name,
+          C.person_id__c,
+          D.external_id_vod__c AS product_id
+   FROM
+     (SELECT account_vod__c,
+             activity_datetime_vod__c,
+             event_type_vod__c,
+             product,
+             ownerid,
+             max(tactic_name) as tactic_name,
+             product_vod__c
+      FROM
+        (SELECT account_vod__c,
+                event_type_vod__c,
+                cast(substr(activity_datetime_vod__c, 1, 10) AS DATE) AS activity_datetime_vod__c,
+                B.product_display_vod__c AS product,
+                B.product_vod__c,
+                B.ownerid,
+                B.tactic_name,
+                B.id
+         FROM
+           (SELECT *
+            FROM LDG_VEEVA_EMAIL_ACTIVITY) AS A
+         INNER JOIN
+           (SELECT a.*,
+                   c.*
+            FROM LDG_VEEVA_SENT_EMAIL a
+            INNER JOIN LDG_VEEVA_APV_DOC b ON a.approved_email_template_vod__c = b.id
+            INNER JOIN edb_xref c ON b.vault_document_id_vod__c = c.document_id
+            WHERE upper(a.status_vod__c) = 'DELIVERED_VOD' ) AS B ON A.sent_email_vod__c = B.id) P
+      GROUP BY account_vod__c,
+               activity_datetime_vod__c,
+               event_type_vod__c,
+               product,
+               ownerid,
+               product_vod__c) B
+   INNER JOIN LDG_VEEVA_ACCOUNTS AS C ON B.account_vod__c = C.id
+   INNER JOIN LDG_VEEVA_PROD D ON upper(B.product_vod__c) = upper(D.id)) A
+    WHERE upper(product) IN
+    (SELECT tgt_prod_nm
+     FROM M_PROD_XREF
+     WHERE src_nm  = 'TEAM_RESP_CD'
+       AND attr_val IN
+         (SELECT DISTINCT product_id
+          FROM rep_alignment)
+       AND actv = 'Y'
+       AND tgt_prod_nm IS NOT NULL
+				)
+		) B
+        on A.customer_id = B.hcp_id and A.user_id = B.owner_id and substr(trim(A.product_id),1,9) = B.product_id
+        group by A.orgunit_id,A.customer_id,upper(A.salesforce_id),A.user_id,Date1,A.vae_engaged
+        ) M
+        group by orgunit_id, customer_id,salesforce_id,user_id
+        having count(actual_vae_engaged) != count(veeva_vae_engaged)
+) m",NA,NA,DTT | TEST | There is a mismatch in between the number VAE engaged for any HCPs across any product in the searchable universe in comparision to veeva call2 activity
+72,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/04_ARCHIVAL/date=current_date/01_INPUT_FILES/FI_MASTER_FILES/insight/,insights,",",parquet,insight_text,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(src.insight_text) as count 
+from src
+inner join insightentitymapping mapp
+on src.insight_id = mapp.insight_id
+left join UNIVERSAL_CUSTOMER_LIST
+on UNIVERSAL_CUSTOMER_LIST.customer_id = mapp.entity_id
+where UNIVERSAL_CUSTOMER_LIST.ama_pdrp_out in ('YES') and src.insight_text not like '%PDRP%'",NA,NA,DTT | TEST | The PDRP HCPs are not flagged correctly in the FI app backend data file for HCPs
+73,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,cloud_tag_1,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select metric from (select cloud_tag_1 metric
+from src
+union all
+select cloud_tag_2 metric
+from src
+union all
+select cloud_tag_3 metric
+from src
+union all
+select cloud_tag_4 metric
+from src
+union all
+select cloud_tag_5 metric
+from src
+union all
+select cloud_tag_6 metric
+from src
+)x
+where x.metric not in ('NA','N/A',null)
+except
+select distinct metric_key
+from METRIC_MAPPING
+)z",NA,NA,DTT | TEST | The cloud tags are not populated correctly in the FI app backend file for insight metrics and rationale
+74,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING,|,csv,metric_name_1,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select metric from 
+(select metric_name_1 metric
+from src
+union all
+select metric_name_2 metric
+from src
+union all
+select metric_name_3 metric
+from src
+union all
+select metric_name_4 metric
+from src
+union all
+select metric_name_5 metric
+from src
+union all
+select metric_name_6 metric
+from src
+) as x
+where x.metric not in ('NA','N/A',null)
+except
+select distinct metric_key
+from metric_mapping
+)z",NA,NA,DTT | TEST | The active metrics getting populated are not a sub set of existing metrics.
+75,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerproductorgunitplanchannelnumericmetric/,customerproductorgunitplanchannelnumericmetric,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*)
+from
+(select distinct upper(channel_id) as channel_id from src as m
+except
+select distinct upper(method_of_payment) as channel_id from payer as b where method_of_payment in ('ASSISTANCE','COMMERCIAL','FFS MEDICAID','MEDICARE','MGD MEDICAID','MEDICARE D','CASH','UNKNOWN','UNKNOWN MEDICAL')
+) a",NA,NA,DTT | TEST | The list of MOPs does not match exactly with the MOPs as per aligned requirement
+76,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/02_OUTPUT_FILES/INGESTIONS/MASTER/UNIVERSAL_CUSTOMER_LIST/,Universal_Customer_list,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(SELECT DISTINCT CASE
+                    WHEN a.speciality_id != ly_mjr_spclty_code THEN 'FALSE'
+                    ELSE 'TRUE'
+                END AS flag
+FROM customerspecialitymapping a
+INNER JOIN src b ON b.customer_id=a.customer_id) xyz where flag!='TRUE'",NA,NA,"DTT | TEST | The display specialty of the HCP does not get correctly updated based on the source data i.e., Universal Customer List"
+77,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insightentitymapping/,insightentitymapping,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select count(*) as flag, x.entity_id, y.user_id from src as x
+join insight as y 
+on y.insight_id=x.insight_id
+group by x.entity_id, y.user_id having flag >7
+) xyz",NA,NA,DTT | TEST | The insight per HCP exceed 7
+78,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,address,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(
+select distinct(concat(address)) from src
+except
+select distinct(concat(name,"", "",city_vod__c,"", "",state_vod__c,"", "",zip_vod__c)) 
+from ldg_veeva_address
+) z",NA,NA,DTT | TEST |  the display address of the HCP is not correctly concatenated
+79,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/alignment/,alignment,",",parquet,product_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct(alignment.product_id) from src as alignment
+except
+select distinct(rep_alignment.product_id) from rep_alignment) z",NA,NA,DTT | TEST | The products of HCP-Terr alignment are not the part of product bag
+80,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+	(select count(distinct a.customer_id, a.orgunit_id ) as cnt_rep_alignment, 
+	count(distinct b.customer_id,b.orgunit_id) as cnt_fialignment
+		from 
+		(select distinct customer_id, orgunit_id
+		from src) a
+		LEFT JOIN
+		(select distinct customer_id, orgunit_id
+		from alignment) b
+		ON a.customer_id=b.customer_id 
+		and
+		a.orgunit_id=b.orgunit_id
+	) m 
+where cnt_fialignment != cnt_rep_alignment",NA,NA,DTT | TEST | The HCP-Terr alignment of FIA output file with searchable universe validation is not correct
+81,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/payer/,payer,",",parquet,payer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as null_in_payer from src where Payer_Id IS NULL or Payer_Name IS NULL or Is_Deleted IS NULL,NA,NA,DTT | NULL | Either Payer_Id IS NULL or Payer_Name IS NULL or Is_Deleted IS NULL
+82,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/plan/,plan,",",parquet,Plan_Id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as null_in_payer from src where Plan_Id IS NULL or Plan_Name IS NULL or Payer_Id IS NULL or Is_Deleted  IS NULL ,NA,NA,DTT | NULL |Either Plan_Id IS NULL or Plan_Name IS NULL or Payer_Id IS NULL or Is_Deleted  IS NULL 
+83,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/channel/,channel,",",parquet,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) as null_in_channel from src where Channel_Id IS NULL or Channel_Name IS NULL or Is_Deleted IS NULL,NA,NA,DTT | NULL | Either Channel_Id IS NULL or Channel_Name IS NULL or Is_Deleted IS NULL
+84,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/customerproductorgunitplanchannelnumericmetric/,customerproductorgunitplanchannelnumericmetric,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as null_managed_care_data from src where 
+Orgunit_Id IS NULL OR Product_Id IS NULL OR Customer_Id IS NULL OR Plan_Id IS NULL OR 
+Channel_Id IS NULL OR Time_Id IS NULL OR SalesForce_Id IS NULL",NA,NA,DTT | NULL | Either Orgunit_Id IS NULL OR Product_Id IS NULL OR Customer_Id IS NULL OR Plan_Id IS NULL OR Channel_Id IS NULL OR Time_Id IS NULL OR SalesForce_Id IS NULL
+85,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,channel_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from
+(select distinct channel_id_pp
+from 
+(select post_processing.channel_id as channel_id_pp,xyz.channel_id as channel_id_po,
+post_processing.customer_id,orgunit_id
+from src post_processing
+inner join (select * from PO_PRE_PROCESSING_OUTPUT where actual_count>0 and channel_id='VAE') xyz
+on xyz.customer_id=post_processing.customer_id
+and geography_id=orgunit_id and xyz.product_id=post_processing.product_id
+)x
+where channel_id_pp != 'VAE'
+)z",NA,NA,DTT | TEST | These records have suggested VAE in PO output but does not contain channel ID as VAE in post processing
+86,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,hcp_id,Custom_count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) as count_id from 
+(select distinct(hcp_id)
+from src
+except
+select distinct(customer_id)
+from PO_PRE_PROCESSING_OUTPUT
+where actual_count>0
+) as count_table",NA,NA,DTT | SUBSET | hcp_id in suggestedengagement is not a subset of hcp_id in post_processing_master file
+87,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (
+select 
+count(distinct a.customer_id, a.channel_id, a.product_id, a.geography_id,
+a.salesforce_id) as cnt_pp, 
+count(distinct b.lilly_person_id, b.suggestion_channel, b.product_id, b.territory_id, b.sleeve_name)
+as cnt_sugg_eng_summary
+from (
+select distinct p.customer_id, p.channel_id, p.product_id, p.geography_id,
+upper(r.salesforce_id) as salesforce_id 
+from PO_PRE_PROCESSING_OUTPUT p
+left join 
+src r
+on p.customer_id=r.customer_id and p.geography_id =r.orgunit_id
+where actual_count>0 ) a
+
+LEFT JOIN
+(select distinct lilly_person_id, suggestion_channel, product_id, territory_id, sleeve_name
+from suggested_engagement_extract) b
+ON a.customer_id=b.lilly_person_id and a.channel_id=b.suggestion_channel
+and substr(trim(a.product_id),1,9)=b.product_id and 
+a.geography_id=b.territory_id and upper(trim(a.salesforce_id)) = upper(trim(b.sleeve_name))
+) m 
+where cnt_pp != cnt_sugg_eng_summary",NA,NA,DTT | TEST | The summary of suggested engagements are not captured correctly in suggested engagement reporting extracts based on PO output at HCP-Rep-product level
+88,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/suggestedengagements/,suggestedengagements,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(select distinct hcp_id, orgunit_id from src
+except
+select distinct customer_id, geography_id from PO_PRE_PROCESSING_OUTPUT where actual_count>0) z
+",NA,NA,DTT | TEST |The volume of CALL and VAE of suggested engagement FIA output file with the PO output file at HCP-Rep-product level is not correct
+89,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select distinct customer_id 
+from src
+except
+select distinct customer_id 
+from PO_PRE_PROCESSING_OUTPUT where actual_count>0) n",NA,NA,DTT | TEST | The generated insight does not have a part of either only PO suggested CALL or VAE
+90,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select COUNT(*) from 
+(select count(*) as counting, customer_id, rep_id, product_id 
+from src where insight_type in ('SUMMARY', 'PORTFOLIO', 'URGENT') 
+GROUP BY customer_id, rep_id, product_id, insight_type)t where counting > 1",NA,NA,DTT | PO_CUTOVER | HCPS HAVING MORE THAN 1 PORTFOLIO OR SUMMARY OR URGENT
+91,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
+( select a.* from  
+(select * from PO_PRE_PROCESSING_OUTPUT where actual_count > 0 ) a 
+inner join 
+(select * from src where rep_id is null) as b 
+on a.customer_id = b.customer_id and
+a.product_id = b.product_id and 
+upper(trim(a.geography_id)) = upper(trim(b.orgunit_id))
+)",NA,NA,DTT | PO_CUTOVER | HCPS DROPED DUE TO VACANT TERR
+92,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/PO_PRE_PROCESSING_OUTPUT/sugg_posted_date=PO_START_DATE/,PO_PRE_PROCESSING_OUTPUT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count (distinct counter) from (
+select a.customer_id, b.customer_id as counter from ldg_pi_model a 
+right join (select * from src where actual_count > 0 )b
+on a.customer_id= b.customer_id
+and concat(a.product_id,'_',a.indication_id) = b.product_id and
+a.resp_code = b.sales_force_code
+where a.customer_id is null) t",NA,NA,DTT | PO_CUTOVER | HCPS having actual_count>0 but not in ldg_pi_model
+93,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/date=current_date/,POST_PROCESSING_MASTER,|,csv,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from(
+select customer_id, rep_id, count(*) as insight_count
+from src
+where UPPER(insight_type)='URGENT' and expiry_date>current_date
+group by customer_id, rep_id HAVING insight_count > 1)h",NA,NA,DTT | PO_CUTOVER | Hcp rep combination having Urgent insight_type count>1
+94,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/REP_ALIGNMENT/sugg_posted_date=current_date/,REP_ALIGNMENT,",",parquet,customer_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"SELECT Count(*)
+FROM   (SELECT a.customer_id,
+               b.customer_id,
+               a.hcp_city_raw,
+               b.hcp_city,
+               a.total_calls_raw,
+               b.total_calls,
+               a.total_vaes_raw,
+               b.total_vaes
+        FROM   (SELECT DISTINCT tc.customer_id,
+                                Trim(rp.hcp_city) AS hcp_city_raw,
+                                Cast(Nvl(total_calls, 0) AS INT) AS Total_Calls_raw,
+                                Cast(Nvl(total_vaes, 0) AS INT)  AS
+                                Total_VAEs_raw
+                FROM   temp1_customer tc
+                       LEFT JOIN (SELECT customer_id,
+                                         Sum(CASE
+                                               WHEN channel_id = 'CALL'
+                                                    AND call_position = 'P1'
+                                             THEN
+                                               actual_count
+                                             END) AS total_calls,
+                                         Sum(CASE
+                                               WHEN channel_id = 'VAE'
+                                                    AND call_position = 'P1'
+                                             THEN
+                                               actual_count
+                                             END) AS total_vaes
+                                  FROM  PO_PRE_PROCESSING_OUTPUT
+                                  GROUP  BY customer_id) po
+                              ON tc.customer_id = po.customer_id
+                       LEFT JOIN src RP
+                              ON tc.customer_id = rp.customer_id) a
+               LEFT JOIN customer b
+                      ON a.customer_id = b.customer_id) f
+WHERE  trim(hcp_city_raw) != hcp_city
+        OR total_calls_raw != total_calls
+        OR total_vaes_raw != total_vaes;",NA,NA,DTT | TEST | The data in list view attributes is not correct city name or total calls or total vaes
+95,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/FIA_PO/PO_PRE_PROCESSING_OUTPUT/sugg_posted_date=PO_START_DATE/,PO_PRE_PROCESSING_OUTPUT,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select  salesforce_name, brand_name,
+count(distinct  geography_id ) as `Total # of Territories aligned`,
+nvl(count( distinct (case when actual_count > 0 then customer_id end)),'0') as `# HCPs reached (Call or VAE)`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'CALL' and call_position = 'P1' then actual_count end),'0') as `# Suggested P1 Calls`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'CALL' and call_position = 'P2' then actual_count end),'0' ) as `# Suggested P2 Calls`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'CALL' and call_position = 'P3' then actual_count end),'0') as `# Suggested P3 Calls`,
+nvl(sum(case when UPPER(TRIM(channel_id )) = 'VAE' then actual_count end),'0') as `# Suggested VAEs`
+from (select a.*, b.brand_name, b.salesforce_name from src a
+left join 
+(
+select distinct concat(product_id,""_"", indication_id) as product_id,
+concat(brand_name,""_"", indication_name) as brand_name,
+salesforce_code, salesforce_name
+from Sftu
+) b 
+on a.product_id = b.product_id and a.sales_force_code = b.salesforce_code
+) c
+group by salesforce_name, brand_name
+order by salesforce_name, brand_name",NA,NA,PO Summary : To be sent in week 1 of DT cycle
+96,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/02_OUTPUT_FILES/INGESTIONS/LDG_PO_OUTPUT/,RAW_PO_OUTPUT,",",parquet,customer_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select distinct 
+salesforce_id as sales_force_code,
+`# Suggested P1 Calls`,
+`# Suggested P2 Calls`,
+`# Suggested P3 Calls`,
+`# Suggested VAEs`,
+`% Dropped P1 Calls`,
+`% Dropped P2 Calls`,
+`% Dropped P3 Calls`,
+`% Dropped VAEs`
+
+from
+(
+
+select sales_force_code,
+nvl(max(`P1_#call_sugg`),0) as `# Suggested P1 Calls`,
+nvl(max(`P2_#call_sugg`),0) as `# Suggested P2 Calls`,
+nvl(max(`P3_#call_sugg`),0) as `# Suggested P3 Calls`,
+nvl(max(`#VAE_sugg`),0) as `# Suggested VAEs`,
+nvl(max(`P1_%call_DROP`),0) as `% Dropped P1 Calls`,
+nvl(max(`P2_%call_DROP`),0) as `% Dropped P2 Calls`,
+nvl(max(`P3_%call_DROP`),0) as `% Dropped P3 Calls`,
+nvl(max(`VAE_%_DROP`),0) as `% Dropped VAEs`
+from (
+
+select distinct sales_force_code,
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P1_#call_sugg`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P2_#call_sugg`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P3_#call_sugg`,
+case when upper(channel_id) = 'VAE' then sum_of_actual end as `#VAE_sugg`,
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P1_%call_DROP`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P2_%call_DROP`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P3_%call_DROP`,
+case when  upper(channel_id) = 'VAE' then `% ac_drop` end as `VAE_%_DROP`
+from (
+
+select distinct channel_id, sales_force_code,call_position, sum_of_actual, drop_actual,
+round((drop_actual/sum_of_actual)*100,2)||'%' as `% ac_drop`
+from (
+select distinct channel_id, sales_force_code,call_position,	
+sum(actual_count) over (partition by channel_id, sales_force_code,call_position ) as sum_of_actual,	
+sum( case when rep_align_customer_id is NULL then actual_count else 0 end ) over (partition by channel_id, sales_force_code,call_position ) as drop_actual 	
+
+from	
+(	
+select  po1.*, rep_align.customer_id rep_align_customer_id from	
+(select * from src where actual_count>0 ) po1	
+left join REP_ALIGNMENT rep_align	
+on rep_align.customer_id = po1.customer_id	
+and rep_align.territory_sk = po1.geography_id	
+and rep_align.product_id = po1.product_id	
+and rep_align.salesforce_code = po1.sales_force_code	
+) x1	) a ) b
+) c group by sales_force_code ) x
+left join (
+select distinct salesforce_code, salesforce_id from REP_ALIGNMENT rep_align ) y 
+on x.sales_force_code = y.salesforce_code
+
+union
+
+select 'TOTAL' as sales_force_code,
+nvl(max(`P1_#call_sugg`),0) as `# Suggested P1 Calls`,
+nvl(max(`P2_#call_sugg`),0) as `# Suggested P2 Calls`,
+nvl(max(`P3_#call_sugg`),0) as `# Suggested P3 Calls`,
+nvl(max(`#VAE_sugg`),0) as `# Suggested VAEs`,
+nvl(max(`P1_%call_DROP`),0) as `% Dropped P1 Calls`,
+nvl(max(`P2_%call_DROP`),0) as `% Dropped P2 Calls`,
+nvl(max(`P3_%call_DROP`),0) as `% Dropped P3 Calls`,
+nvl(max(`VAE_%_DROP`),0) as `% Dropped VAEs`
+from (
+
+select distinct
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P1_#call_sugg`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P2_#call_sugg`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then sum_of_actual else 0 end as `P3_#call_sugg`,
+case when upper(channel_id) = 'VAE' then sum_of_actual end as `#VAE_sugg`,
+case when call_position = 'P1' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P1_%call_DROP`,
+case when call_position = 'P2' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P2_%call_DROP`,
+case when call_position = 'P3' and upper(channel_id) = 'CALL' then `% ac_drop` end as `P3_%call_DROP`,
+case when  upper(channel_id) = 'VAE' then `% ac_drop` end as `VAE_%_DROP`
+from (
+
+select distinct channel_id,call_position, sum_of_actual, drop_actual,
+round((drop_actual/sum_of_actual)*100,2)||'%' as `% ac_drop`
+from (
+select distinct channel_id,call_position,	
+sum(actual_count) over (partition by channel_id,call_position ) as sum_of_actual,	
+sum( case when rep_align_customer_id is NULL then actual_count else 0 end ) over (partition by channel_id,call_position ) as drop_actual 	
+
+from	
+(	
+select  po1.*, rep_align.customer_id rep_align_customer_id from	
+(select * from src where actual_count>0 ) po1	
+left join REP_ALIGNMENT rep_align	
+on rep_align.customer_id = po1.customer_id	
+and rep_align.territory_sk = po1.geography_id	
+and rep_align.product_id = po1.product_id	
+and rep_align.salesforce_code = po1.sales_force_code	
+) x1	) a ) b
+) c ",NA,NA,PO Drop Summary  : To be sent in week 1 of DT cycle
+97,Post,US_FIA,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/insight/,insight,",",parquet,insight_id,Custom_Count_Check,Daily,Active,NA,NA,N,prerequisite condition,select count(*) from src where insight_id not in (select distinct guid from post_processing_master_full where LOAD_STATERGY ='ADD'),NA,NA,Test | Insight_id in insights file is absent in post_processing_master file

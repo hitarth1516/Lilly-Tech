@@ -1,0 +1,38 @@
+name: "BranchProtection"
+
+on:
+  branch_protection_rule:
+    types: [deleted, edited]
+
+jobs:
+  Branch_protection_Scanning:
+    runs-on: ubuntu-latest
+    steps:
+    # Generate a token to call the API with
+    - name: Create token
+      id: token
+      run: |
+        # Generate an Access Token
+        RESPONSE=$(curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'client_id=${{ secrets.GRAPHAPICLIENTID }}&scope=api://${{ secrets.SERVICENOW_API_ID }}/.default&client_secret=${{ secrets.GRAPHAPICLIENTSECRET }}&grant_type=client_credentials' '${{ secrets.OAUTH_TOKEN_ENDPOINT }}')
+        TOKEN=$(echo $RESPONSE | jq -r '.access_token')
+        echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+    # Call the API to create an incident
+    - name: Create INC
+      id: inc
+      run: |
+        curl -X POST -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${{ env.TOKEN }}" \
+        -d '{
+            "AREA": "Job Failure",
+            "ASSIGNMENT_GROUP": "EDB-GLB",
+            "CATEGORY": "Software Support",
+            "CORRELATION_DISPLAY": "Software Support",
+            "FACILITY_CODE": "MC Lilly Corporate Center",
+            "IMPACT": "Low",
+            "LOCATION": "MC Lilly Corporate Center",
+            "SUB_CATEGORY": "Application Support",
+            "URGENCY": "Medium",
+            "CONFIGURATION_ITEM": "EDB: GitHub Actions Pipeline",
+            "job_name": "Branch Protections Changed/Deleted",
+            "error_message": "The branch protections in ${{ github.repository }} were changed by ${{ github.actor }}. Please review the changes and ensure that the branch protections are still appropriate for the repository"
+            }' ${{ vars.INCIDENT_ENDPOINT }}

@@ -1,2 +1,2 @@
-# Lilly-Tech
-All Tech projects for Lilly
+# buit-edb-dynamic-targeting
+This is the repository for Omnichannel Dynamic Targeting

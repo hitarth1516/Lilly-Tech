@@ -1,0 +1,124 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,LILLY_PERSON_ID,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'SALES_METRICS' as FILE_NAME,count(*) as RECORD_COUNT, max(load_date)as LATEST_LOAD_DATE, 'load_date' as COLUMN_USED from src
+union
+select 'HCP_PROFILE_TOP_PAYERS' as FILE_NAME,count(*) as RECORD_COUNT, max(load_date)as LATEST_LOAD_DATE, 'load_date' as COLUMN_USED from profile_top_payers
+union
+select 'SOA_BRAND_SENT_EMAILS' as FILE_NAME, count(*) as RECORD_COUNT , max(ds_load_date)as LATEST_LOAD_DATE, 'ds_load_date' as COLUMN_USED from soa_brand_sent_emails",,,File List and Latest Load Dates
+2,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,LILLY_PERSON_ID,Null,Daily,Active,NA,NA,N,,,,,
+3,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,LILLY_PERSON_ID,CheckLength,Daily,Active,NA,11,N,11,,,,
+4,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,MKTP_ID,Null,Daily,Active,NA,NA,N,,,,,
+5,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,GRAIN_CODE,Null,Daily,Active,NA,NA,N,,,,,
+6,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,CURRENT_START_DATE,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+7,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,CURRENT_END_DATE,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+8,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,PREVIOUS_START_DATE,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+9,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,PREVIOUS_END_DATE,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+10,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,METRIC_NAME,Null,Daily,Active,NA,NA,N,,,,,
+11,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,CURRENT_VALUE,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where (current_value rlike '[a-z]|[A-Z]') or (cast(current_value as double) < 0),,,Non-numeric or negative value in CURRENT_VALUE
+12,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,PREVIOUS_VALUE,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where (previous_value rlike '[a-z]|[A-Z]') or (cast(previous_value as double) < 0),,,Non-numeric or negative value in PREVIOUS_VALUE
+13,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,eph_reference_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from (select count(*), X.winnerhcpreferenceid as lilly_person_id,mktp_id,grain_code,
+CURRENT_START_DATE,CURRENT_END_DATE,metric_name,theraclass_id from src left join (select loserhcpreferenceid,winnerhcpreferenceid from hcpreferencexref) x
+on src.eph_reference_id = X.loserhcpreferenceid
+group by X.winnerhcpreferenceid,mktp_id,grain_code,CURRENT_START_DATE,
+CURRENT_END_DATE,metric_name,theraclass_id 
+having count(*)>1)a",,,Duplicates at eph_reference_id : mktp_id : grain_code : current_start_date : current_end_date : metric_name : theraclass_id
+14,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,LILLY_PERSON_ID,Good_Records,Daily,Active,NA,NA,NA,prerequisite condition,select * from src,Overwrite,,
+15,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,activity_type,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and activity_type is null,,,activity_type is null
+16,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,activity_type,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct activity_type) from src 
+where activity_type in ('ENGAGEMENT','IMPRESSION')",,,One or more activity_type required value is missing
+17,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`activity_data_type`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and activity_data_type is null,,,activity_data_type is null
+18,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`data_source_code`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and data_source_code is null,,,data_source_code is null
+19,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`delivery_source`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and delivery_source is null,,,delivery_source is null
+20,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,eph_reference_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src left join (select loserhcpreferenceid,winnerhcpreferenceid from hcpreferencexref) x
+on src.eph_reference_id = X.loserhcpreferenceid where upper(country)='US' and upper(trim(department))='RETAIL' and X.winnerhcpreferenceid is null",,,Lilly_person_id is null
+21,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`campaign_id`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and campaign_id is null,,,campaign_id is null
+22,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`content_message`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src where upper(country)='US' 
+and upper(trim(department))='RETAIL' 
+and content_message is null
+and brand in ('TALTZ','OLUMIANT','JARDIANCE','MOUNJARO','ZEPBOUND','JAYPIRCA','VERZENIO','KISUNLA')",,,content_message is null
+23,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`message_type`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src where upper(country)='US' 
+and upper(trim(department))='RETAIL' 
+and message_type is null
+and brand in ('TALTZ','OLUMIANT','JARDIANCE','MOUNJARO','ZEPBOUND','JAYPIRCA','VERZENIO','KISUNLA')",,,message_type is null
+24,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`personal_promotion_flag`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and personal_promotion_flag is null,,,personal_promotion_flag is null
+25,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`platform`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and platform is null,,,platform is null
+26,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`tactic_id`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and upper(trim(department))='RETAIL' and tactic_id is null,,,tactic_id is null
+27,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,brand_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from src where upper(country)='US' 
+and brand_id is null and brand in ('TALTZ','OLUMIANT','JARDIANCE','MOUNJARO','ZEPBOUND','JAYPIRCA','VERZENIO','KISUNLA') 
+and upper(trim(department))='RETAIL'",,,brand is null
+28,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,`activity_date`,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where upper(country)='US' and activity_date is null,,,activity_date is null
+29,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,activity_date,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+30,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,activity_date,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+31,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,tactic_id,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"Select count(distinct cap.verso_tactic_id)
+FROM CAP_EXTRACT cap
+inner join src soa
+on upper(trim(cap.verso_tactic_id))=upper(trim(soa.tactic_id))
+and (upper(trim(cap.primary_category))<> upper(trim(soa.message_type))
+or upper(trim(cap.primary_subcategory))<> upper(trim(soa.content_message)))
+and brand in ('TALTZ','OLUMIANT','JARDIANCE','MOUNJARO','ZEPBOUND','JAYPIRCA','VERZENIO','KISUNLA')",,,Content Category/Sub-category mismatch between CAP_EXTRACT and SOA_BRAND_EMAILS files for same tactic
+32,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,tactic_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 'NUMEDIS_MDMINUTE' as channel,count(1) from src where  upper(trim(brand)) = 'VERZENIO' and upper(trim(indication)) = 'BREAST CANCER - EARLY' and upper(trim(data_source_code)) = 'NUMEDIS' and upper(trim(platform)) = 'MD MINUTE - EMAIL' and upper(trim(activity_data_type)) in ('DELIVERED_EM','OPENS','CLICKS')
+union all
+select 'EDH_PROFLOW_EDMU' as channel,count(1) from src where  upper(trim(brand)) = 'VERZENIO' and upper(trim(indication)) = 'BREAST CANCER - EARLY' and upper(trim(data_source_code)) = 'EVERYDAY HEALTH MEDIA, LLC' and upper(trim(platform)) = 'PROFUSION FLOW - EDMU' and upper(trim(activity_data_type)) in ('VISITS','REACH')
+union all
+select 'EDH_PROFLOW_RDMU' as channel,count(1) from src where  upper(trim(brand)) = 'VERZENIO' and upper(trim(indication)) = 'BREAST CANCER - EARLY' and upper(trim(data_source_code)) = 'EVERYDAY HEALTH MEDIA, LLC' and upper(trim(platform)) = 'PROFUSION FLOW - RDMU' and upper(trim(activity_data_type)) in ('VISITS','REACH')
+union all
+select 'EDH_PROFLOW_WDMU' as channel,count(1) from src where  upper(trim(brand)) = 'VERZENIO' and upper(trim(indication)) = 'BREAST CANCER - EARLY' and upper(trim(data_source_code)) = 'EVERYDAY HEALTH MEDIA, LLC' and upper(trim(platform)) = 'PROFUSION FLOW - WDMU' and upper(trim(activity_data_type)) in ('VISITS','REACH')",NA,NA,Not Applicable
+33,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,country,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 1 - count(distinct country) from src 
+where country in ('US')",,,One or more country required value is missing
+34,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,department,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 2 - count(distinct department) from src 
+where department in ('RETAIL','Retail')",,,One or more department required value is missing
+35,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,eph_reference_id,Good_Records,Daily,Active,NA,NA,N,prerequisite condition,"select soa.activity_type,
+soa.activity_data_type,
+soa.data_source_code,
+soa.delivery_source,
+soa.lilly_person_id,
+soa.eph_reference_id,
+soa.eph_enterprise_id,
+soa.campaign_id,
+soa.content_message,
+soa.message_type,
+soa.personal_promotion_flag,
+soa.platform,
+soa.tactic_id,
+soa.indication,
+soa.brand,
+soa.activity_date,
+soa.activity_count,
+soa.verso_recommendation_id,
+soa.url_address,
+soa.country,
+soa.department,
+soa.alias,
+soa.brand_id,
+soa.indication_id,
+soa.ds_load_date
+ from (select *, X.winnerhcpreferenceid as new_lilly_person_id from src left join (select loserhcpreferenceid,winnerhcpreferenceid from hcpreferencexref) x
+on src.eph_reference_id = X.loserhcpreferenceid where upper(trim(department))='RETAIL' and upper(trim(country))='US')soa 
+left join (select lilly_person_id,count(distinct eph_enterprise_id,eph_reference_id) from(
+select X.winnerhcpreferenceid as lilly_person_id,coalesce(eph_enterprise_id,'-1') as eph_enterprise_id,
+coalesce(eph_reference_id,'-1') as eph_reference_id
+from src left join (select loserhcpreferenceid,winnerhcpreferenceid from hcpreferencexref) x
+on src.eph_reference_id = x.loserhcpreferenceid where upper(trim(department))='RETAIL' and upper(trim(country))='US')a group by lilly_person_id
+having count(distinct eph_enterprise_id,eph_reference_id)>1)b 
+on soa.new_lilly_person_id = b.lilly_person_id where b.lilly_person_id is null",Overwrite,,
+36,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,activity_type,Null,Daily,Active,NA,NA,N,,,,,
+37,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,country,Null,Daily,Active,NA,NA,N,,,,,
+38,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/ACTIVITY/BRAND_SENT_EMAILS/,UV_SOA_Brand_Emails,",",parquet,department,Null,Daily,Active,NA,NA,N,,,,,
+39,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,LILLY_PERSON_ID,Null,Daily,Active,NA,NA,N,,,,,
+40,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,MKTP_ID,Null,Daily,Active,NA,NA,N,,,,,
+41,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,THERACLASS_ID,Null,Daily,Active,NA,NA,N,,,,,
+42,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,MARKET_NAME,Null,Daily,Active,NA,NA,N,,,,,
+43,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,METHOD_OF_PAYMENT,Null,Daily,Active,NA,NA,N,,,,,
+44,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,PAYER_ID,Null,Daily,Active,NA,NA,N,,,,,
+45,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,PAYER_NAME,Null,Daily,Active,NA,NA,N,,,,,
+46,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,GRAIN_CODE,Null,Daily,Active,NA,NA,N,,,,,
+47,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,START_DATE,Null,Daily,Active,NA,NA,N,,,,,
+48,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,END_DATE,Null,Daily,Active,NA,NA,N,,,,,
+49,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,MARKET_TRX,Null,Daily,Active,NA,NA,N,,,,,
+50,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,LILLY_PERSON_ID,CheckLength,Daily,Active,NA,11,N,11,,,,
+51,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,START_DATE,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+52,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,END_DATE,Date_yymmdd,Daily,Active,NA,NA,N,,,,,
+53,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,MARKET_TRX,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,select count(*) from src where MARKET_TRX not regexp '^[0-9]',,,Column MARKET_TRX has Non Numeric Values
+54,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,"`LILLY_PERSON_ID`,`MKTP_ID`,`THERACLASS_ID`,`MARKET_NAME`,`METHOD_OF_PAYMENT`,`PAYER_NAME`,`GRAIN_CODE`,`START_DATE`,`END_DATE`",Duplicate_Check,Daily,Active,NA,NA,N,,,,,
+55,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_PROFILE_TOP_PAYERS/,US_HCP_Profile_Top_Payers,",",parquet,LILLY_PERSON_ID,Good_Records,Daily,Active,NA,NA,N,prerequisite condition,Select * from src,Overwrite,,
+56,Post,US,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/00_RAW_FILES/MASTER/HCP_SALES_METRICS/,US_HCP_Sales_Metrics,",",parquet,LILLY_BRAND,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select 9 - count(distinct lilly_brand) from src
+where upper(lilly_brand) in ('TALTZ','OLUMIANT','MOUNJARO','ZEPBOUND','JARDIANCE','JAYPIRCA','VERZENIO','KISUNLA','AMYVID')",,,Check if required brands are available in the file

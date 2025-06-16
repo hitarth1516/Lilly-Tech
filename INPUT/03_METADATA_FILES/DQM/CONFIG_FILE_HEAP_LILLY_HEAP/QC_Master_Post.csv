@@ -1,0 +1,307 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+1,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_page_date_extract_lilly_heap/,user_page_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select monday_date,
+round(sum(avg_time_perday_obu)/count(distinct case when avg_time_perday_obu is not null then user_id end),1) as avg_time_obu,
+round(sum(avg_time_perday_ldo)/count(distinct case when avg_time_perday_ldo is not null then user_id end),1) as avg_time_ldo,
+round(sum(avg_time_perday_imm)/count(distinct case when avg_time_perday_imm is not null then user_id end),1) as avg_time_imm,
+round(sum(avg_time_perday_alz)/count(distinct case when avg_time_perday_alz is not null then user_id end),1) as avg_time_alz
+from
+(
+	select user_id,
+	monday_date,
+	sum(PAGE_ENGAGEMENT_TIME_OBU)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_OBU is not null then `date` end), 0) as avg_time_perday_obu,
+	sum(PAGE_ENGAGEMENT_TIME_LDO)/nullif(count(distinct case when  PAGE_ENGAGEMENT_TIME_LDO is not null then `date` end),0) as avg_time_perday_ldo,
+	sum(PAGE_ENGAGEMENT_TIME_IMM)/nullif(count(distinct case when  PAGE_ENGAGEMENT_TIME_IMM is not null then `date` end),0) as avg_time_perday_imm,
+	sum(PAGE_ENGAGEMENT_TIME_ALZ)/nullif(count(distinct case when  PAGE_ENGAGEMENT_TIME_ALZ is not null then `date` end),0) as avg_time_perday_alz
+	from
+	(
+		select
+		user_id,
+		`date`,
+		monday_date,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20241001 and business_unit_id='US_OBU' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_OBU,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME'  and  `date`>=20240708 and business_unit_id='US_LDO' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_LDO,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and business_unit_id in ('US_BMBU_IMM','US_PR') then data_element_value end ) as PAGE_ENGAGEMENT_TIME_IMM,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20250106 and business_unit_id='US_ALZ' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_ALZ
+		from (
+		SELECT *, DATE_FORMAT(DATE_ADD(DATE_SUB(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), 
+Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), '1970-01-04'), 7) ), 1  ), 'yyyyMMdd'
+  ) AS monday_date
+FROM user_page_date_extract_intermediate 
+WHERE CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')
+) updelh
+		left join (
+					select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+					) rahlh 
+		on updelh.user_id=rahlh.rep_id
+		and updelh.monday_date=rahlh.sugg_posted_date
+		group by user_id,`date`,monday_date
+	)a 
+		group by user_id,monday_date
+)b 
+group by monday_date
+order by monday_date desc",,,Not Applicable
+2,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_page_date_extract_lilly_heap/,user_page_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select day_name,avg_time_obu,avg_time_ldo,avg_time_imm,avg_time_alz
+from
+	(
+	select day_name,day_number,
+	round(sum(avg_time_perday_obu)/count(distinct case when avg_time_perday_obu is not null then user_id end),1) as avg_time_obu,
+	round(sum(avg_time_perday_ldo)/count(distinct case when avg_time_perday_ldo is not null then user_id end),1) as avg_time_ldo,
+	round(sum(avg_time_perday_imm)/count(distinct case when avg_time_perday_imm is not null then user_id end),1) as avg_time_imm,
+	round(sum(avg_time_perday_alz)/count(distinct case when avg_time_perday_alz is not null then user_id end),1) as avg_time_alz
+	from
+	(
+		select user_id,day_name,day_number,
+		sum(PAGE_ENGAGEMENT_TIME_OBU)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_OBU is not null then date_ end),0) as avg_time_perday_obu,
+		sum(PAGE_ENGAGEMENT_TIME_LDO)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_LDO is not null then date_ end),0) as avg_time_perday_ldo,
+		sum(PAGE_ENGAGEMENT_TIME_IMM)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_IMM is not null then date_ end),0) as avg_time_perday_imm,
+		sum(PAGE_ENGAGEMENT_TIME_ALZ)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_ALZ is not null then date_ end),0) as avg_time_perday_alz
+		from
+		(
+			select
+			user_id,
+			FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')) AS date_,
+DATE_FORMAT(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')), 'EEEE') AS day_name,
+Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')), '1970-01-04'), 7) + 1 AS day_number,
+
+			--TO_CHAR(TO_DATE(CAST(`date` AS TEXT), 'YYYYMMDD'), 'D') AS day_number,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20241001 and business_unit_id='US_OBU' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_OBU,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20240708 and business_unit_id='US_LDO' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_LDO,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and business_unit_id in ('US_BMBU_IMM','US_PR') then data_element_value end ) as PAGE_ENGAGEMENT_TIME_IMM,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20250106 and business_unit_id='US_ALZ' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_ALZ
+			from (SELECT *, DATE_FORMAT(DATE_ADD(DATE_SUB(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), 
+                  Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), '1970-01-04'), 7) ), 1  ), 'yyyyMMdd') AS monday_date
+				from user_page_date_extract_intermediate WHERE CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')) updelh 
+			left join (
+						select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+						) rahlh 
+			on updelh.user_id=rahlh.rep_id
+			and updelh.monday_date=rahlh.sugg_posted_date
+			group by user_id,`date`
+		)a 
+		group by user_id,day_name,day_number
+	)b 
+	group by day_name,day_number
+	)c
+order by day_number ",,,Not Applicable
+3,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_date_extract_lilly_heap/,user_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select monday_date,
+sum(active_users_obu)/count(distinct case when active_users_obu>0 then `date` end) as avg_reps_perweek_obu,
+sum(active_users_ldo)/count(distinct case when active_users_ldo>0 then `date` end) as avg_reps_perweek_ldo,
+sum(active_users_imm)/count(distinct case when active_users_imm>0 then `date` end) as avg_reps_perweek_imm,
+sum(active_users_alz)/count(distinct case when active_users_alz>0 then `date` end) as avg_reps_perweek_alz
+from
+(
+	select
+	`date`,
+    monday_date,
+	count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and  `date`>=20241001 and business_unit_id='US_OBU' then user_id end ) as active_users_obu,
+	count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and  `date`>=20240708 and business_unit_id='US_LDO' then user_id end ) as active_users_ldo,
+	count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and business_unit_id in ('US_BMBU_IMM','US_PR') then user_id end ) as active_users_imm,
+	count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and  `date`>=20250106 and business_unit_id='US_ALZ' then user_id end ) as active_users_alz
+	
+	from (SELECT *,DATE_FORMAT(DATE_ADD(DATE_SUB( FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'),
+Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'),'1970-01-04' ), 7)),
+CASE WHEN FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'u') = '7' THEN -6 ELSE 1 END),'yyyyMMdd') AS monday_date
+FROM user_date_extract_intermediate WHERE CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd'))  udelh
+	left join (
+				select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+				) rahlh 
+	on udelh.user_id=rahlh.rep_id
+	and udelh.monday_date=rahlh.sugg_posted_date
+	group by `date`,monday_date
+)a 
+group by monday_date",,,Not Applicable
+4,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_date_extract_lilly_heap/,user_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select day_name,avg_active_users_per_day_obu,avg_active_users_per_day_ldo,avg_active_users_per_day_imm,avg_active_users_per_day_alz
+from 
+	(
+	select day_name,day_number,
+	sum(active_users_obu)/count(distinct case when  active_users_obu>0 then date_ end) as avg_active_users_per_day_obu,
+	sum(active_users_ldo)/count(distinct case when  active_users_ldo>0 then date_ end) as avg_active_users_per_day_ldo,
+	sum(active_users_imm)/count(distinct case when  active_users_imm>0 then date_ end) as avg_active_users_per_day_imm,
+	sum(active_users_alz)/count(distinct case when  active_users_alz>0 then date_ end) as avg_active_users_per_day_alz
+	from
+	(
+		select
+		FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')) AS date_,
+DATE_FORMAT(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')), 'EEEE') AS day_name,
+Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')), '1970-01-04'), 7) + 1 AS day_number,
+		count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and  `date`>=20241001 and business_unit_id='US_OBU' then user_id end ) as active_users_obu,
+		count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and  `date`>=20240708 and business_unit_id='US_LDO' then user_id end ) as active_users_ldo,
+		count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and business_unit_id in ('US_BMBU_IMM','US_PR') then user_id end ) as active_users_imm,
+		count(distinct case when upper(data_element_name)='ACTIVE_SESSION' and  `date`>=20250106 and business_unit_id='US_ALZ' then user_id end ) as active_users_alz
+		from (SELECT *, DATE_FORMAT(DATE_ADD(DATE_SUB(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), 
+                  Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), '1970-01-04'), 7) ), 1  ), 'yyyyMMdd') AS monday_date from user_date_extract_intermediate WHERE CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')) udelh
+		left join (
+					select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+					) rahlh 
+		on udelh.user_id=rahlh.rep_id
+		and udelh.monday_date=rahlh.sugg_posted_date
+		group by `date`
+	)a 
+	group by day_name,day_number
+	)b 
+order by day_number",,,Not Applicable
+5,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_date_extract_lilly_heap/,user_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select
+	TO_DATE(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'))) AS date_
+	,SUM( case when `date`>=20241007 and business_unit_id='US_OBU' then data_element_value end )/nullif(count(distinct case when `date`>=20241007 and business_unit_id='US_OBU' then user_id end),0) as avg_cycle_start_usage_obu
+	,SUM( case when `date`>=20240708 and business_unit_id='US_LDO' then data_element_value end )/nullif(count(distinct case when `date`>=20240708 and business_unit_id='US_LDO' then user_id end),0) as avg_cycle_start_usage_ldo
+	,SUM( case when business_unit_id in ('US_BMBU_IMM','US_PR') then data_element_value end )/nullif(count(distinct case when business_unit_id in ('US_BMBU_IMM','US_PR') then user_id end),0) as avg_cycle_start_usage_imm
+	,SUM( case when `date`>=20250106 and business_unit_id='US_ALZ' then data_element_value end )/nullif(count(distinct case when `date`>=20250106 and business_unit_id='US_ALZ' then user_id end),0) as avg_cycle_start_usage_alz
+	from (SELECT *, DATE_FORMAT(DATE_ADD(DATE_SUB(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), 
+                  Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), '1970-01-04'), 7) ), 1  ), 'yyyyMMdd') AS monday_date from user_date_extract_intermediate  where upper(data_element_name)='TIME_SPENT_ON_FIRST_DAY_OF_CYCLE'  
+			and  CAST(`date` AS STRING) = DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')
+	) udelh
+	left join (
+				select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+				) rahlh 
+	on udelh.user_id=rahlh.rep_id
+	and udelh.monday_date=rahlh.sugg_posted_date
+	group by `date`
+	order by `date`",,,Not Applicable
+6,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_date_extract_lilly_heap/,user_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+   case 
+		when avg_cycle_start_usage_obu>90 then '>90'
+		when avg_cycle_start_usage_obu>60 then '61-90'
+		when avg_cycle_start_usage_obu>45 then '46-60'
+		when avg_cycle_start_usage_obu>30 then '31-45'
+		when avg_cycle_start_usage_obu>15 then '16-30'
+		when avg_cycle_start_usage_obu>=1 then '1-15'
+		when avg_cycle_start_usage_obu>=0 then '<1'
+	end as t_bkt_obu,
+	case 
+		when avg_cycle_start_usage_ldo>90 then '>90'
+		when avg_cycle_start_usage_ldo>60 then '61-90'
+		when avg_cycle_start_usage_ldo>45 then '46-60'
+		when avg_cycle_start_usage_ldo>30 then '31-45'
+		when avg_cycle_start_usage_ldo>15 then '16-30'
+		when avg_cycle_start_usage_ldo>=1 then '1-15'
+		when avg_cycle_start_usage_ldo>=0 then '<1'
+	end as t_bkt_ldo,
+	case 
+		when avg_cycle_start_usage_imm>90 then '>90'
+		when avg_cycle_start_usage_imm>60 then '61-90'
+		when avg_cycle_start_usage_imm>45 then '46-60'
+		when avg_cycle_start_usage_imm>30 then '31-45'
+		when avg_cycle_start_usage_imm>15 then '16-30'
+		when avg_cycle_start_usage_imm>=1 then '1-15'
+		when avg_cycle_start_usage_imm>=0 then '<1'
+	end as t_bkt_imm,
+	case 
+		when avg_cycle_start_usage_alz>90 then '>90'
+		when avg_cycle_start_usage_alz>60 then '61-90'
+		when avg_cycle_start_usage_alz>45 then '46-60'
+		when avg_cycle_start_usage_alz>30 then '31-45'
+		when avg_cycle_start_usage_alz>15 then '16-30'
+		when avg_cycle_start_usage_alz>=1 then '1-15'
+		when avg_cycle_start_usage_alz>=0 then '<1'
+	end as t_bkt_alz,
+	count(distinct user_id) as reps 
+from
+(
+	select
+	user_id,
+	SUM( case when `date`>=20241007 and business_unit_id='US_OBU' then data_element_value end )/nullif(count(distinct case when `date` in (20241007,20250106) and business_unit_id='US_OBU' then `date` end),0) as avg_cycle_start_usage_obu
+	,SUM( case when `date`>=20240708 and business_unit_id='US_LDO' then data_element_value end )/nullif(count(distinct case when `date`>=20240708 and business_unit_id='US_LDO' then `date` end),0) as avg_cycle_start_usage_ldo
+	,SUM( case when business_unit_id in ('US_BMBU_IMM','US_PR') then data_element_value end )/nullif(count(distinct case when business_unit_id in ('US_BMBU_IMM','US_PR') then `date` end),0) as avg_cycle_start_usage_imm
+	,SUM( case when `date`>=20250106 and business_unit_id='US_ALZ' then data_element_value end )/nullif(count(distinct case when `date`>=20250106 and business_unit_id='US_ALZ' then `date` end),0) as avg_cycle_start_usage_alz
+	from (SELECT *,DATE_FORMAT(DATE_ADD(DATE_SUB( FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'),
+Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'),'1970-01-04' ), 7)),
+CASE WHEN FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'u') = '7' THEN -6 ELSE 1 END),'yyyyMMdd') AS monday_date
+FROM user_date_extract_intermediate WHERE upper(data_element_name)='TIME_SPENT_ON_FIRST_DAY_OF_CYCLE' 
+			and CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')
+	) udelh
+	left join (
+				select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+				) rahlh 
+	on udelh.user_id=rahlh.rep_id
+	and udelh.monday_date=rahlh.sugg_posted_date
+	group by user_id
+)a
+group by avg_cycle_start_usage_obu,avg_cycle_start_usage_ldo,avg_cycle_start_usage_imm,avg_cycle_start_usage_alz",,,Not Applicable
+7,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_page_date_extract_lilly_heap/,user_page_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select monday_date,page_visited,
+round(sum(avg_time_perday_obu)/count(distinct case when avg_time_perday_obu is not null then user_id end),1) as avg_time_obu,
+round(sum(avg_time_perday_ldo)/count(distinct case when avg_time_perday_ldo is not null then user_id end),1) as avg_time_ldo,
+round(sum(avg_time_perday_imm)/count(distinct case when avg_time_perday_imm is not null then user_id end),1) as avg_time_imm,
+round(sum(avg_time_perday_alz)/count(distinct case when avg_time_perday_alz is not null then user_id end),1) as avg_time_alz
+from
+(
+	select user_id,
+	monday_date,
+	page_visited,
+	sum(PAGE_ENGAGEMENT_TIME_OBU)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_OBU is not null then `date` end), 0) as avg_time_perday_obu,
+	sum(PAGE_ENGAGEMENT_TIME_LDO)/nullif(count(distinct case when  PAGE_ENGAGEMENT_TIME_LDO is not null then `date` end),0) as avg_time_perday_ldo,
+	sum(PAGE_ENGAGEMENT_TIME_IMM)/nullif(count(distinct case when  PAGE_ENGAGEMENT_TIME_IMM is not null then `date` end),0) as avg_time_perday_imm,
+	sum(PAGE_ENGAGEMENT_TIME_ALZ)/nullif(count(distinct case when  PAGE_ENGAGEMENT_TIME_ALZ is not null then `date` end),0) as avg_time_perday_alz
+	from
+	(
+		select
+		user_id,
+		`date`,
+		monday_date,
+		page_visited,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20241001 and business_unit_id='US_OBU' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_OBU,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME'  and  `date`>=20240708 and business_unit_id='US_LDO' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_LDO,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and business_unit_id in ('US_BMBU_IMM','US_PR') then data_element_value end ) as PAGE_ENGAGEMENT_TIME_IMM,
+		sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and business_unit_id= 'US_ALZ' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_ALZ
+		from (SELECT *, DATE_FORMAT(DATE_ADD(DATE_SUB(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), 
+                  Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), '1970-01-04'), 7) ), 1  ), 'yyyyMMdd') AS monday_date from user_page_date_extract_intermediate WHERE CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')) updelh
+		left join (
+					select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+					from rep_alignment_heap
+					) rahlh 
+		on updelh.user_id=rahlh.rep_id
+		and updelh.monday_date=rahlh.sugg_posted_date
+		group by user_id,`date`,monday_date,page_visited
+	)a 
+		group by user_id, monday_date, page_visited
+)b 
+group by monday_date,page_visited
+order by monday_date,page_visited desc",,,Not Applicable
+8,Post,US_LILLY_HEAP,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/data/HEAP_EXTRACT_LILLY_HEAP/user_page_date_extract_lilly_heap/,user_page_date_extract_intermediate,|,parquet,user_id,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select day_name,page_visited,avg_time_obu,avg_time_ldo,avg_time_imm, avg_time_alz
+from
+	(
+	select day_name,page_visited,day_number,
+	round(sum(avg_time_perday_obu)/count(distinct case when avg_time_perday_obu is not null then user_id end),1) as avg_time_obu,
+	round(sum(avg_time_perday_ldo)/count(distinct case when avg_time_perday_ldo is not null then user_id end),1) as avg_time_ldo,
+	round(sum(avg_time_perday_imm)/count(distinct case when avg_time_perday_imm is not null then user_id end),1) as avg_time_imm,
+	round(sum(avg_time_perday_alz)/count(distinct case when avg_time_perday_alz is not null then user_id end),1) as avg_time_alz
+	from
+	(
+		select user_id,page_visited,day_name,day_number,
+		sum(PAGE_ENGAGEMENT_TIME_OBU)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_OBU is not null then date_ end),0) as avg_time_perday_obu,
+		sum(PAGE_ENGAGEMENT_TIME_LDO)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_LDO is not null then date_ end),0) as avg_time_perday_ldo,
+		sum(PAGE_ENGAGEMENT_TIME_IMM)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_IMM is not null then date_ end),0) as avg_time_perday_imm,
+		sum(PAGE_ENGAGEMENT_TIME_ALZ)/NULLIF(count(distinct case when  PAGE_ENGAGEMENT_TIME_ALZ is not null then date_ end),0) as avg_time_perday_alz
+		from
+		(
+			select
+			user_id,
+			page_visited,
+			TO_DATE(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'))) AS date_,
+DATE_FORMAT(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')), 'EEEE') AS day_name,
+Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd')), '1970-01-05'), 7) + 1 AS day_number,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20241001 and business_unit_id='US_OBU' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_OBU,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and  `date`>=20240708 and business_unit_id='US_LDO' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_LDO,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and business_unit_id in ('US_BMBU_IMM','US_PR') then data_element_value end ) as PAGE_ENGAGEMENT_TIME_IMM,
+			sum(case when upper(data_element_name)='PAGE_ENGAGEMENT_TIME' and business_unit_id= 'US_ALZ' then data_element_value end ) as PAGE_ENGAGEMENT_TIME_ALZ
+			from (SELECT *, DATE_FORMAT(DATE_ADD(DATE_SUB(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), 
+                  Pmod(DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(CAST(`date` AS STRING), 'yyyyMMdd'), 'yyyy-MM-dd'), '1970-01-04'), 7) ), 1  ), 'yyyyMMdd') AS monday_date
+				from user_page_date_extract_intermediate WHERE CAST(`date` AS STRING) >= DATE_FORMAT(TO_DATE('PO_START_DATE', 'yyyy-MM-dd'), 'yyyyMMdd')) updelh --- apply latest PO date filter
+			left join (
+						select distinct DATE_FORMAT(sugg_posted_date, 'yyyyMMdd') as sugg_posted_Date,rep_id,business_unit_id,salesforce_code,product_id 
+						from rep_alignment_heap
+						) rahlh 
+			on updelh.user_id=rahlh.rep_id
+			and updelh.monday_date=rahlh.sugg_posted_date
+			group by user_id,page_visited,`date`
+		)a 
+		group by user_id,page_visited,day_name,day_number
+	)b 
+	group by day_name,page_visited,day_number
+	)c
+order by day_number",,,Not Applicable

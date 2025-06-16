@@ -1,0 +1,2273 @@
+QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+IMM_1,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code in ('DERM_1','DERM_2','RHEUM_1','RHEUM_2', 'DERM_RHEUM_HYB')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code
+	order by p.salesforce_code
+
+) a
+
+full outer join
+
+(
+	select 
+		salesforce_id as salesforce_code,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code)
+
+left join
+
+(
+	select
+		salesforce_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+		and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id)
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		salesforce_code , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+		and insight_type = 'SUMMARY'
+	group by salesforce_code
+	order by salesforce_code
+
+) b
+on a.salesforce_code = b.salesforce_code
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  x.salesforce_code as salesforce_code, count(x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)x
+		
+		full outer join
+		(
+		select rep_id, salesforce_code, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code
+		order by x.salesforce_code
+	
+) c
+on a.salesforce_code = c.salesforce_code
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select aa.salesforce_code as salesforce_code, (bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select salesforce_code, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'SUMMARY'
+			and active_status='Y'
+		group by salesforce_code
+		order by salesforce_code
+
+	) aa
+
+	full outer join
+
+	(
+		select salesforce_code, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code
+			having insight_count = 1
+		) x
+		group by x.salesforce_code
+	) bb
+
+	on aa.salesforce_code = bb.salesforce_code
+) d
+on a.salesforce_code = d.salesforce_code
+order by `sleeve name`",NA,NA,Not Applicable
+IMM_2,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.product_id as `Product ID`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+	
+
+	
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		p.product_id as product_id,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code in ('DERM_1','DERM_2','RHEUM_1','RHEUM_2', 'DERM_RHEUM_HYB')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code, p.product_id
+	order by p.salesforce_code, p.product_id
+
+) a
+
+full outer join
+
+(
+	select 
+		salesforce_id as salesforce_code,
+		product_id as product_id,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+		and rep_id is not null
+	group by salesforce_id, product_id
+	order by upper(salesforce_id), product_id
+
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code) and	a.product_id = a0.product_id
+
+left join
+
+(
+	select
+		salesforce_id,
+		entities.`values`['product'].id as product_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id, entities.`values`['product'].id
+	order by upper(salesforce_id), product_id
+
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id) and a.product_id = a1.product_id
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		salesforce_code ,product_id , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+		and insight_type = 'SUMMARY'
+	group by salesforce_code, product_id
+	order by salesforce_code, product_id
+
+) b
+on a.salesforce_code = b.salesforce_code and a.product_id = b.product_id
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  
+		x.salesforce_code as salesforce_code,
+		x.product_id as product_id,
+		count(distinct x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, product_id, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, salesforce_code, product_id
+			order by rep_id, salesforce_code, product_id
+		)x
+		
+		full outer join
+		(
+		select rep_id, salesforce_code, product_id, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code, product_id
+			order by rep_id, salesforce_code, product_id
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code and x.product_id = b.product_id
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code, x.product_id
+		order by x.salesforce_code, x.product_id
+	
+) c
+on a.salesforce_code = c.salesforce_code and a.product_id = c.product_id
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select 
+		aa.salesforce_code as salesforce_code,
+		aa.product_id as product_id,
+		(bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select salesforce_code, product_id, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'SUMMARY'
+			and active_status='Y'
+		group by salesforce_code, product_id
+		order by salesforce_code, product_id
+
+	) aa
+
+	full outer join
+
+	(
+		select salesforce_code, product_id, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, product_id, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code, product_id
+			having insight_count = 1
+		) x
+		group by x.salesforce_code, x.product_id
+	) bb
+
+	on aa.salesforce_code = bb.salesforce_code and	aa.product_id = bb.product_id
+	order by salesforce_code, product_id
+) d
+on a.salesforce_code = d.salesforce_code and a.product_id = d.product_id
+order by `Sleeve Name`,`Product ID`",NA,NA,Not Applicable
+IMM_3,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.DERM_1_hcp_count_gen,0) as DERM_1_hcp_count_gen,
+	nvl(g.DERM_2_hcp_count_gen,0) as DERM_2_hcp_count_gen,
+	nvl(h.RHEUM_1_hcp_count_gen,0) as RHEUM_1_hcp_count_gen,
+	nvl(i.RHEUM_2_hcp_count_gen,0) as RHEUM_2_hcp_count_gen,
+	nvl(j.DERM_RHEUM_HYB_hcp_count_gen,0) as DERM_RHEUM_HYB_hcp_count_gen,
+	nvl(a0.DERM_1_hcp_count_PO,0) as DERM_1_hcp_count_PO,
+	nvl(b0.DERM_2_hcp_count_PO,0) as DERM_2_hcp_count_PO,
+	nvl(c0.RHEUM_1_hcp_count_PO,0) as RHEUM_1_hcp_count_PO,
+	nvl(d0.RHEUM_2_hcp_count_PO,0) as RHEUM_2_hcp_count_PO,
+	nvl(e0.DERM_RHEUM_HYB_hcp_count_PO,0) as DERM_RHEUM_HYB_hcp_count_PO,	
+	nvl(a.DERM_1_hcp_count_ppm,0) as DERM_1_hcp_count_ppm,
+	nvl(b.DERM_2_hcp_count_ppm,0) as DERM_2_hcp_count_ppm,
+	nvl(c.RHEUM_1_hcp_count_ppm,0) as RHEUM_1_hcp_count_ppm,
+	nvl(d.RHEUM_2_hcp_count_ppm,0) as RHEUM_2_hcp_count_ppm,
+	nvl(e.DERM_RHEUM_HYB_hcp_count_ppm,0) as DERM_RHEUM_HYB_hcp_count_ppm,
+    ((nvl(a.DERM_1_hcp_count_ppm, 0) + nvl(b.DERM_2_hcp_count_ppm, 0) + nvl(c.RHEUM_1_hcp_count_ppm, 0) + nvl(d.RHEUM_2_hcp_count_ppm, 0) + nvl(e.DERM_RHEUM_HYB_hcp_count_ppm, 0)-(nvl(f.DERM_1_hcp_count_gen, 0) + nvl(g.DERM_2_hcp_count_gen, 0) + nvl(h.RHEUM_1_hcp_count_gen, 0) + nvl(i.RHEUM_2_hcp_count_gen, 0) + nvl(j.DERM_RHEUM_HYB_hcp_count_gen, 0)))/
+	(nvl(f.DERM_1_hcp_count_gen, 0) + nvl(g.DERM_2_hcp_count_gen, 0) + nvl(h.RHEUM_1_hcp_count_gen, 0) + nvl(i.RHEUM_2_hcp_count_gen, 0) + nvl(j.DERM_RHEUM_HYB_hcp_count_gen, 0)))*100 as percentage_change
+
+ from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%PSO%' OR
+		UPPER(sugg_name) like '%PSA%' OR
+		UPPER(sugg_name) like '%OLUMIANT%' OR
+		UPPER(sugg_name) like '%EBGLYSS%' 
+) m
+
+--generated counts
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`['customer'].id ) as DERM_1_hcp_count_gen
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_1'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`['customer'].id ) as DERM_2_hcp_count_gen
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_2'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`['customer'].id ) as RHEUM_1_hcp_count_gen
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_1'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`['customer'].id ) as RHEUM_2_hcp_count_gen
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='RHEUM_2'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) i on trim(m.sugg_name)=trim(i.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`['customer'].id ) as DERM_RHEUM_HYB_hcp_count_gen
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='DERM_RHEUM_HYB'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) j on trim(m.sugg_name)=trim(j.sugg_name)
+
+--PO_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_1_hcp_count_PO
+	from sugg_map m
+	left join ppm p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_1'
+--		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) a0 on trim(m.sugg_name)=trim(a0.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_2_hcp_count_PO
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_2'
+--		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) b0 on trim(m.sugg_name)=trim(b0.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_1_hcp_count_PO
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_1'
+--		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) c0 on trim(m.sugg_name)=trim(c0.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_2_hcp_count_PO
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_2'
+--		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) d0 on trim(m.sugg_name)=trim(d0.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_RHEUM_HYB_hcp_count_PO
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_RHEUM_HYB'
+--		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) e0 on trim(m.sugg_name)=trim(e0.sugg_name)
+
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_1_hcp_count_ppm
+	from sugg_map m
+	left join ppm p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_1'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_2_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_2'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_1_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_1'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_2_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_2'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) d on trim(m.sugg_name)=trim(d.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_RHEUM_HYB_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_RHEUM_HYB'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) e on trim(m.sugg_name)=trim(e.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+IMM_4,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.DERM_1_hcp_count_prev,0) as DERM_1_hcp_count_prev,
+	nvl(g.DERM_2_hcp_count_prev,0) as DERM_2_hcp_count_prev,
+	nvl(h.RHEUM_1_hcp_count_prev,0) as RHEUM_1_hcp_count_prev,
+	nvl(i.RHEUM_2_hcp_count_prev,0) as RHEUM_2_hcp_count_prev,
+	nvl(j.DERM_RHEUM_HYB_hcp_count_prev,0) as DERM_RHEUM_HYB_hcp_count_prev,
+	nvl(a.DERM_1_hcp_count_ppm,0) as DERM_1_hcp_count_ppm,
+	nvl(b.DERM_2_hcp_count_ppm,0) as DERM_2_hcp_count_ppm,
+	nvl(c.RHEUM_1_hcp_count_ppm,0) as RHEUM_1_hcp_count_ppm,
+	nvl(d.RHEUM_2_hcp_count_ppm,0) as RHEUM_2_hcp_count_ppm,
+	nvl(e.DERM_RHEUM_HYB_hcp_count_ppm,0) as DERM_RHEUM_HYB_hcp_count_ppm,
+    (((nvl(a.DERM_1_hcp_count_ppm, 0) + nvl(b.DERM_2_hcp_count_ppm, 0) + nvl(c.RHEUM_1_hcp_count_ppm, 0) + nvl(d.RHEUM_2_hcp_count_ppm, 0) + nvl(e.DERM_RHEUM_HYB_hcp_count_ppm, 0))-
+	(nvl(f.DERM_1_hcp_count_prev, 0) + nvl(g.DERM_2_hcp_count_prev, 0) + nvl(h.RHEUM_1_hcp_count_prev, 0) + nvl(i.RHEUM_2_hcp_count_prev, 0) + nvl(j.DERM_RHEUM_HYB_hcp_count_prev, 0))) /
+	(nvl(f.DERM_1_hcp_count_prev, 0) + nvl(g.DERM_2_hcp_count_prev, 0) + nvl(h.RHEUM_1_hcp_count_prev, 0) + nvl(i.RHEUM_2_hcp_count_prev, 0) + nvl(j.DERM_RHEUM_HYB_hcp_count_prev, 0)))*100 as percentage_change
+
+ from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%PSO%' OR
+		UPPER(sugg_name) like '%PSA%' OR
+		UPPER(sugg_name) like '%OLUMIANT%' OR
+		UPPER(sugg_name) like '%EBGLYSS%'
+) m
+
+--prev counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_1_hcp_count_prev
+	from sugg_map m
+	left join ppm_prev p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_1'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_2_hcp_count_prev
+	from sugg_map m
+	left join ppm_prev p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_2'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_1_hcp_count_prev
+	from sugg_map m
+	left join ppm_prev p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_1'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_2_hcp_count_prev
+	from sugg_map m
+	left join ppm_prev p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_2'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) i on trim(m.sugg_name)=trim(i.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_RHEUM_HYB_hcp_count_prev
+	from sugg_map m
+	left join ppm_prev p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_RHEUM_HYB'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) j on trim(m.sugg_name)=trim(j.sugg_name)
+
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_1_hcp_count_ppm
+	from sugg_map m
+	left join ppm p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_1'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_2_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_2'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_1_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_1'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as RHEUM_2_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='RHEUM_2'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) d on trim(m.sugg_name)=trim(d.sugg_name)
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as DERM_RHEUM_HYB_hcp_count_ppm
+	from sugg_map m
+	left join ppm p
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='DERM_RHEUM_HYB'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) e on trim(m.sugg_name)=trim(e.sugg_name)
+order by trim(sugg_name)",NA,NA,Not Applicable
+IMM_5,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a0.product_id as `Product ID`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+	
+
+	
+from
+(
+	select 
+		p.product_id as product_id,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code in ('DERM_1','DERM_2','RHEUM_1','RHEUM_2', 'DERM_RHEUM_HYB')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.product_id
+	order by p.product_id
+
+) a
+
+full outer join
+
+(
+	select 
+		product_id as product_id,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+		and rep_id is not null
+	group by product_id
+	order by product_id
+
+) a0
+on a.product_id = a0.product_id
+
+left join
+
+(
+	select
+		entities.`values`['product'].id as product_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id in ('Derm_1','Derm_2','Rheum_1','Rheum_2', 'DERM_RHEUM_HYB')
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by entities.`values`['product'].id
+	order by product_id
+
+) a1
+on a.product_id = a1.product_id
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		product_id , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+		and insight_type = 'SUMMARY'
+	group by product_id
+	order by product_id
+
+) b
+on a.product_id = b.product_id
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  
+		x.product_id as product_id,
+		count(distinct x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, product_id, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, product_id
+			order by rep_id, product_id
+		)x
+		
+		full outer join
+		(
+		select rep_id, product_id, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, product_id
+			order by rep_id, product_id
+		)b
+		on x.rep_id = b.rep_id and x.product_id = b.product_id
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.product_id
+		order by x.product_id
+	
+) c
+on a.product_id = c.product_id
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select 
+		aa.product_id as product_id,
+		(bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select product_id, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'SUMMARY'
+			and active_status='Y'
+		group by product_id
+		order by product_id
+
+	) aa
+
+	full outer join
+
+	(
+		select product_id, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, product_id, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, product_id
+			having insight_count = 1
+		) x
+		group by x.product_id
+	) bb
+
+	on aa.product_id = bb.product_id
+	order by product_id
+) d
+on a.product_id = d.product_id
+order by `Product ID`",NA,NA,Not Applicable
+CMH_1,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	(b.HCPs_being_reached_either_by_call_or_VAE)/(a0.Total_HCPs) as `%_HCPs_being_reached_(either by callÊor VAE)Ê?`,
+	a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code Like '%CMH%'
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code
+	order by p.salesforce_code
+
+) a
+
+full outer join
+
+(
+	select 
+		salesforce_id as salesforce_code,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id Like '%CMH%'
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code)
+
+left join
+
+(
+		select
+		salesforce_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id like '%CMH%'
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+		and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id)
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		salesforce_code , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+	group by salesforce_code
+	order by salesforce_code
+
+) b
+on a.salesforce_code = b.salesforce_code
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  x.salesforce_code as salesforce_code, count(x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'PORTFOLIO'	
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)x
+		
+		full outer join
+		(
+		select rep_id, salesforce_code, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code
+		order by x.salesforce_code
+	
+) c
+on a.salesforce_code = c.salesforce_code
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select aa.salesforce_code as salesforce_code, (bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select salesforce_code, count(distinct customer_id) as total_hcp
+		from ppm
+		where active_status='Y'
+		group by salesforce_code
+		order by salesforce_code
+
+	) aa
+
+	full outer join
+
+	(
+		select salesforce_code, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code
+			having insight_count = 1
+		) x
+		group by x.salesforce_code
+	) bb
+
+	on aa.salesforce_code = bb.salesforce_code
+) d
+on a.salesforce_code = d.salesforce_code
+order by `sleeve name`",NA,NA,Not Applicable
+CMH_2,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.product_id as `Product ID`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	(b.HCPs_being_reached_either_by_call_or_VAE)/(a0.Total_HCPs) as `%_HCPs_being_reached_(either by call or VAE)?`,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+	
+
+	
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		substring(p.product_id,1,9) as product_id,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code Like '%CMH%'
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code, p.product_id
+	order by p.salesforce_code, p.product_id
+
+) a
+
+full outer join
+
+(
+	select 
+		salesforce_id as salesforce_code,
+		substring(product_id,1,9) as product_id,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id Like '%CMH%'
+		and rep_id is not null
+	group by salesforce_id, substring(product_id,1,9)
+	order by upper(salesforce_id), product_id
+
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code) and	a.product_id = a0.product_id
+
+left join
+
+(
+	select
+		salesforce_id,
+		substring(entities.`values`['product'].id,1,9) as product_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id Like '%CMH%'
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id, substring(entities.`values`['product'].id,1,9)
+	order by upper(salesforce_id), product_id
+
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id) and a.product_id = a1.product_id
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		salesforce_code ,substring(product_id,1,9) as product_id , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+	group by salesforce_code, substring(product_id,1,9)
+	order by salesforce_code, product_id
+
+) b
+on a.salesforce_code = b.salesforce_code and a.product_id = b.product_id
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  
+		x.salesforce_code as salesforce_code,
+		x.product_id as product_id,
+		count(distinct x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, substring(product_id,1,9) as product_id, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, salesforce_code, substring(product_id,1,9)
+			order by rep_id, salesforce_code, substring(product_id,1,9)
+		)x
+		
+		full outer join
+		(
+		select rep_id, salesforce_code, substring(product_id,1,9) as product_id, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code, substring(product_id,1,9)
+			order by rep_id, salesforce_code, substring(product_id,1,9)
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code and x.product_id = b.product_id
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code, x.product_id
+		order by x.salesforce_code, x.product_id
+	
+) c
+on a.salesforce_code = c.salesforce_code and a.product_id = c.product_id
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select 
+		aa.salesforce_code as salesforce_code,
+		aa.product_id as product_id,
+		(bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select salesforce_code, substring(product_id,1,9) as product_id, count(distinct customer_id) as total_hcp
+		from ppm
+		where active_status='Y'
+		group by salesforce_code, substring(product_id,1,9)
+		order by salesforce_code, substring(product_id,1,9)
+
+	) aa
+
+	full outer join
+
+	(
+		select salesforce_code, product_id, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, substring(product_id,1,9) as product_id, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code, substring(product_id,1,9)
+			having insight_count = 1
+		) x
+		group by x.salesforce_code, x.product_id
+	) bb
+
+	on aa.salesforce_code = bb.salesforce_code and	aa.product_id = bb.product_id
+	order by salesforce_code, product_id
+) d
+on a.salesforce_code = d.salesforce_code and a.product_id = d.product_id
+order by `Sleeve Name`,`Product ID`;",NA,NA,Not Applicable
+CMH_3,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(a.CMH_TERR_1_hcp_count_gen,0) as CMH_TERR_1_hcp_count_gen,
+	nvl(b.CMH_TERR_2_hcp_count_gen,0) as CMH_TERR_2_hcp_count_gen,
+	nvl(c.CMH_UNAD_TERR_hcp_count_gen,0) as CMH_UNAD_TERR_hcp_count_gen,
+	nvl(a0.CMH_TERR_1_HCP_COUNT_PO,0) as CMH_TERR_1_HCP_COUNT_PO,
+    nvl(b0.CMH_TERR_2_HCP_COUNT_PO,0) as CMH_TERR_2_HCP_COUNT_PO,
+    nvl(c0.CMH_UNAD_TERR_HCP_COUNT_PO,0) as CMH_UNAD_TERR_HCP_COUNT_PO,
+   	nvl(f.CMH_TERR_1_HCP_COUNT_ppm,0) as CMH_TERR_1_HCP_COUNT_ppm,
+    nvl(g.CMH_TERR_2_HCP_COUNT_ppm,0) as CMH_TERR_2_HCP_COUNT_ppm,
+	nvl(h.CMH_UNAD_TERR_HCP_COUNT_ppm,0) as CMH_UNAD_TERR_HCP_COUNT_ppm,
+    ((nvl(f.CMH_TERR_1_HCP_COUNT_ppm, 0) + nvl(g.CMH_TERR_2_HCP_COUNT_ppm, 0) + nvl(h.CMH_UNAD_TERR_HCP_COUNT_ppm, 0))/
+	(nvl(a.CMH_TERR_1_hcp_count_gen, 0) + nvl(b.CMH_TERR_2_hcp_count_gen, 0) + nvl(c.CMH_UNAD_TERR_hcp_count_gen, 0)))*100 as percentage_change
+
+ from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%JAR%' OR
+		UPPER(sugg_name) like '%MNJ%' OR
+		UPPER(sugg_name) like '%ZEP%'
+) m
+
+--generated counts
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_TERR_1_hcp_count_gen
+from sugg_map m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_1' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_TERR_2_hcp_count_gen
+from sugg_map m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_TERR_2' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as CMH_UNAD_TERR_hcp_count_gen
+from sugg_map m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='CMH_UNAD_TERR' AND rep_id is not null
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+
+--PO_counts
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_1_HCP_COUNT_PO
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_1'
+--and p.active_status='Y' 
+and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) a0 on trim(m.sugg_name)=trim(a0.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_2_HCP_COUNT_PO
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_2'
+--and p.active_status='Y' 
+and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) b0 on trim(m.sugg_name)=trim(b0.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_UNAD_TERR_HCP_COUNT_PO
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_UNAD_TERR'
+--and p.active_status='Y' 
+and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) c0 on trim(m.sugg_name)=trim(c0.sugg_name)
+
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_1_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_1'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_2_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_2'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_UNAD_TERR_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_UNAD_TERR'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+order by trim(sugg_name);",NA,NA,Not Applicable
+CMH_4,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(a.CMH_TERR_1_HCP_COUNT_ppm_prev,0) as CMH_TERR_1_HCP_COUNT_ppm_prev,
+	nvl(b.CMH_TERR_2_HCP_COUNT_ppm_prev,0) as CMH_TERR_2_HCP_COUNT_ppm_prev,
+	nvl(c.CMH_UNAD_TERR_HCP_COUNT_ppm_prev,0) as CMH_UNAD_TERR_HCP_COUNT_ppm_prev,
+   	nvl(f.CMH_TERR_1_HCP_COUNT_ppm,0) as CMH_TERR_1_HCP_COUNT_ppm,
+    nvl(g.CMH_TERR_2_HCP_COUNT_ppm,0) as CMH_TERR_2_HCP_COUNT_ppm,
+	nvl(h.CMH_UNAD_TERR_HCP_COUNT_ppm,0) as CMH_UNAD_TERR_HCP_COUNT_ppm,
+    (((nvl(f.CMH_TERR_1_HCP_COUNT_ppm, 0) + nvl(g.CMH_TERR_2_HCP_COUNT_ppm, 0) + nvl(h.CMH_UNAD_TERR_HCP_COUNT_ppm, 0))-
+	(nvl(a.CMH_TERR_1_HCP_COUNT_ppm_prev, 0) + nvl(b.CMH_TERR_2_HCP_COUNT_ppm_prev, 0) + nvl(c.CMH_UNAD_TERR_HCP_COUNT_ppm_prev, 0)))/
+	(nvl(a.CMH_TERR_1_HCP_COUNT_ppm_prev, 0) + nvl(b.CMH_TERR_2_HCP_COUNT_ppm_prev, 0) + nvl(c.CMH_UNAD_TERR_HCP_COUNT_ppm_prev, 0)))*100 as percentage_change
+
+ from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%JAR%' OR
+		UPPER(sugg_name) like '%MNJ%' OR
+		UPPER(sugg_name) like '%ZEP%'
+) m
+
+--prev counts
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_1_HCP_COUNT_ppm_prev
+from sugg_map m
+left join ppm_prev p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_1'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_2_HCP_COUNT_ppm_prev
+from sugg_map m
+left join ppm_prev p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_2'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) b on trim(m.sugg_name)=trim(b.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_UNAD_TERR_HCP_COUNT_ppm_prev
+from sugg_map m
+left join ppm_prev p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_UNAD_TERR'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) c on trim(m.sugg_name)=trim(c.sugg_name)
+
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_1_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_1'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_TERR_2_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_TERR_2'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) g on trim(m.sugg_name)=trim(g.sugg_name)
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as CMH_UNAD_TERR_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='CMH_UNAD_TERR'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) h on trim(m.sugg_name)=trim(h.sugg_name)
+order by trim(sugg_name);",NA,NA,Not Applicable
+CMH_5,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a0.product_id as `Product ID`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	(b.HCPs_being_reached_either_by_call_or_VAE)/(a0.Total_HCPs) as `%_HCPs_being_reached_(either by call or VAE) `,
+	a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+	
+
+	
+from
+(
+	select 
+		substring(p.product_id,1,9) as product_id,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code Like '%CMH%'
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.product_id
+	order by p.product_id
+
+) a
+
+full outer join
+
+(
+	select 
+		substring(product_id,1,9) as product_id,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where salesforce_id Like '%CMH%'
+		and rep_id is not null
+	group by substring(product_id,1,9)
+	order by product_id
+
+) a0
+on a.product_id = a0.product_id
+
+left join
+
+(
+	select
+		substring(entities.`values`['product'].id,1,9) as product_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where salesforce_id Like '%CMH%'
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by substring(entities.`values`['product'].id,1,9)
+	order by product_id
+
+) a1
+on a.product_id = a1.product_id
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		substring(product_id,1,9) as product_id , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+	group by substring(product_id,1,9)
+	order by product_id
+
+) b
+on a.product_id = b.product_id
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  
+		x.product_id as product_id,
+		count(distinct x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, substring(product_id,1,9) as product_id, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, substring(product_id,1,9)
+			order by rep_id, substring(product_id,1,9)
+		)x
+		
+		full outer join
+		(
+		select rep_id, substring(product_id,1,9) as product_id, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, substring(product_id,1,9)
+			order by rep_id, substring(product_id,1,9)
+		)b
+		on x.rep_id = b.rep_id and x.product_id = b.product_id
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.product_id
+		order by x.product_id
+	
+) c
+on a.product_id = c.product_id
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select 
+		aa.product_id as product_id,
+		(bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select substring(product_id,1,9) as product_id, count(distinct customer_id) as total_hcp
+		from ppm
+		where active_status='Y'
+		group by substring(product_id,1,9)
+		order by substring(product_id,1,9)
+
+	) aa
+
+	full outer join
+
+	(
+		select product_id, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, substring(product_id,1,9) as product_id, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, substring(product_id,1,9)
+			having insight_count = 1
+		) x
+		group by x.product_id
+	) bb
+
+	on aa.product_id = bb.product_id
+	order by product_id
+) d
+on a.product_id = d.product_id
+order by `Product ID`;",NA,NA,Not Applicable
+OBU_1,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where upper(p.salesforce_code) in ('ONC_PORTFOLIO')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code
+	order by p.salesforce_code
+
+) a
+
+full outer join
+
+(
+	select 
+		salesforce_id as salesforce_code,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+	and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code)
+
+left join
+
+(
+	select
+		salesforce_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+		and rep_id is not null
+	group by salesforce_id
+	order by salesforce_id
+
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id)
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		salesforce_code , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+		and insight_type = 'SUMMARY'
+	group by salesforce_code
+	order by salesforce_code
+
+) b
+on a.salesforce_code = b.salesforce_code
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  x.salesforce_code as salesforce_code, count(x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)x
+		
+		full outer join
+		(
+		select rep_id, salesforce_code, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code
+		order by x.salesforce_code
+	
+) c
+on a.salesforce_code = c.salesforce_code
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select aa.salesforce_code as salesforce_code, (bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select salesforce_code, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'SUMMARY'
+			and active_status='Y'
+		group by salesforce_code
+		order by salesforce_code
+
+	) aa
+
+	full outer join
+
+	(
+		select salesforce_code, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code
+			having insight_count = 1
+		) x
+		group by x.salesforce_code
+	) bb
+
+	on aa.salesforce_code = bb.salesforce_code
+) d
+on a.salesforce_code = d.salesforce_code
+order by `sleeve name`",NA,NA,Not Applicable
+OBU_2,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.product_id as `Product ID`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+	
+
+	
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		p.product_id as product_id,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where upper(p.salesforce_code) in ('ONC_PORTFOLIO')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code, p.product_id
+	order by p.salesforce_code, p.product_id
+
+) a
+
+full outer join
+
+(	
+	select 
+		salesforce_id as salesforce_code,
+		substring(product_id,1,9) as product_id,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and rep_id is not null
+	group by salesforce_id, substring(product_id,1,9)
+	order by upper(salesforce_id), product_id
+
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code) and	a.product_id = a0.product_id
+
+left join
+
+(
+	select
+		salesforce_id,
+		substring(entities.`values`['product'].id,1,9) as product_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id, entities.`values`['product'].id
+	order by upper(salesforce_id), product_id
+
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id) and a.product_id = a1.product_id
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		salesforce_code ,product_id , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+		and insight_type = 'SUMMARY'
+	group by salesforce_code, product_id
+	order by salesforce_code, product_id
+
+) b
+on a.salesforce_code = b.salesforce_code and a.product_id = b.product_id
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  
+		x.salesforce_code as salesforce_code,
+		x.product_id as product_id,
+		count(distinct x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, product_id, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, salesforce_code, product_id
+			order by rep_id, salesforce_code, product_id
+		)x
+		
+		full outer join
+		(
+		select rep_id, salesforce_code, product_id, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code, product_id
+			order by rep_id, salesforce_code, product_id
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code and x.product_id = b.product_id
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code, x.product_id
+		order by x.salesforce_code, x.product_id
+	
+) c
+on a.salesforce_code = c.salesforce_code and a.product_id = c.product_id
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select 
+		aa.salesforce_code as salesforce_code,
+		aa.product_id as product_id,
+		(bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select salesforce_code, product_id, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'SUMMARY'
+			and active_status='Y'
+		group by salesforce_code, product_id
+		order by salesforce_code, product_id
+
+	) aa
+
+	full outer join
+
+	(
+		select salesforce_code, product_id, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, product_id, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code, product_id
+			having insight_count = 1
+		) x
+		group by x.salesforce_code, x.product_id
+	) bb
+
+	on aa.salesforce_code = bb.salesforce_code and	aa.product_id = bb.product_id
+	order by salesforce_code, product_id
+) d
+on a.salesforce_code = d.salesforce_code and a.product_id = d.product_id
+order by `Sleeve Name`,`Product ID`",NA,NA,Not Applicable
+OBU_3,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.ONC_PORT_hcp_count_gen,0) as ONC_PORT_hcp_count_gen,
+	nvl(a0.ONC_PORT_hcp_count_PO,0) as ONC_PORT_hcp_count_PO,	
+	nvl(a.ONC_PORT_hcp_count_ppm,0) as ONC_PORT_hcp_count_ppm,
+    (((nvl(a.ONC_PORT_hcp_count_ppm, 0))-(nvl(f.ONC_PORT_hcp_count_gen, 0))) / (nvl(f.ONC_PORT_hcp_count_gen, 0)))*100 as percentage_change
+
+ from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%JAY_CLL%' OR
+		UPPER(sugg_name) like '%JAY_MCL%' OR
+		UPPER(sugg_name) like '%VER_EBC%' OR
+		UPPER(sugg_name) like '%VER_MBC%'
+) m
+
+--generated counts
+left join
+(
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`['customer'].id ) as ONC_PORT_hcp_count_gen
+from SUGG_MAP m
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+where UPPER(p.salesforce_id)='ONC_PORTFOLIO'
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+
+
+
+--PO_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ONC_PORT_hcp_count_PO
+	from sugg_map m
+	left join ppm p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='ONC_PORTFOLIO'
+--		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) a0 on trim(m.sugg_name)=trim(a0.sugg_name)
+
+
+
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ONC_PORT_hcp_count_ppm
+	from sugg_map m
+	left join ppm p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='ONC_PORTFOLIO'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) a on trim(m.sugg_name)=trim(a.sugg_name)",NA,NA,Not Applicable
+OBU_4,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(f.ONC_PORT_hcp_count_prev,0) as ONC_PORT_hcp_count_prev,
+	nvl(a.ONC_PORT_hcp_count_ppm,0) as ONC_PORT_hcp_count_ppm,
+    (((nvl(a.ONC_PORT_hcp_count_ppm, 0))- (nvl(f.ONC_PORT_hcp_count_prev, 0))) / (nvl(f.ONC_PORT_hcp_count_prev, 0)))*100 as percentage_change
+
+ from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%JAY_CLL%' OR
+		UPPER(sugg_name) like '%JAY_MCL%' OR
+		UPPER(sugg_name) like '%VER_EBC%' OR
+		UPPER(sugg_name) like '%VER_MBC%'
+) m
+
+--prev counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ONC_PORT_hcp_count_prev
+	from sugg_map m
+	left join ppm_prev p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='ONC_PORTFOLIO'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+
+
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ONC_PORT_hcp_count_ppm
+	from sugg_map m
+	left join ppm p 
+	on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+	where UPPER(p.salesforce_code)='ONC_PORTFOLIO'
+		and p.active_status='Y'
+	group by trim(m.sugg_name),p.salesforce_code
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+
+order by trim(sugg_name)",NA,NA,Not Applicable
+OBU_5,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	a0.product_id as `Product ID`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+	
+
+	
+from
+(
+	select 
+		p.product_id as product_id,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where p.salesforce_code in ('ONC_PORTFOLIO')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.product_id
+	order by p.product_id
+
+) a
+
+full outer join
+
+(
+	select 
+		substring(product_id,1,9) as product_id,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and rep_id is not null
+	group by substring(product_id,1,9)
+	order by product_id
+
+) a0
+on a.product_id = a0.product_id
+
+left join
+
+(
+	select
+		entities.`values`['product'].id as product_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where upper(salesforce_id) in ('ONC_PORTFOLIO')
+		and rep_id is not null
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by entities.`values`['product'].id
+	order by product_id
+
+) a1
+on a.product_id = a1.product_id
+
+left join
+
+--------------------------------------------HCPs being reached (either by call or VAE)  
+
+(
+	select 
+		product_id , count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+	from ppm
+	where active_status='Y'
+		and insight_type = 'SUMMARY'
+	group by product_id
+	order by product_id
+
+) b
+on a.product_id = b.product_id
+
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  
+		x.product_id as product_id,
+		count(distinct x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, product_id, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'SUMMARY'	
+			group by rep_id, product_id
+			order by rep_id, product_id
+		)x
+		
+		full outer join
+		(
+		select rep_id, product_id, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, product_id
+			order by rep_id, product_id
+		)b
+		on x.rep_id = b.rep_id and x.product_id = b.product_id
+		
+		where x.P_Count - b.B_Count > 0 
+		group by x.product_id
+		order by x.product_id
+	
+) c
+on a.product_id = c.product_id
+
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select 
+		aa.product_id as product_id,
+		(bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+
+	(
+		select product_id, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'SUMMARY'
+			and active_status='Y'
+		group by product_id
+		order by product_id
+
+	) aa
+
+	full outer join
+
+	(
+		select product_id, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, product_id, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, product_id
+			having insight_count = 1
+		) x
+		group by x.product_id
+	) bb
+
+	on aa.product_id = bb.product_id
+	order by product_id
+) d
+on a.product_id = d.product_id
+order by `Product ID`",NA,NA,Not Applicable
+ALZ_1,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	upper(a0.salesforce_code) as `Sleeve Name`,
+	a0.Total_HCPs as `#Total HCP universe `,
+	a0.Total_Reps as `# Total Reps `,
+	b.HCPs_being_reached_either_by_call_or_VAE as `HCPs being reached (either by call or VAE)  `,
+	 a1.Total_Sugg as`Total BRs Generated `,
+	a.Total_BRs_Prioritized as `Total BRs Prioritized `,
+	a.HCPs_Receiving_Sugg as `HCPs receiving BR Insights `,
+	a.Reps_Receiving_Sugg as `reps_receiving_sugg`,
+	d.perc_with_1_br as `% HCPs Receiving only 1 BR `,
+	c.reps_atleast_one_HCP_with_0_BR as `#reps having atleast one HCP with 0 BR  `,
+	((b.HCPs_being_reached_either_by_call_or_VAE)-(a.HCPs_Receiving_Sugg))/(b.HCPs_being_reached_either_by_call_or_VAE) as `% HCPs Receiving 0 BRs`,
+	(a.Total_BRs_Prioritized)/(a.HCPs_Receiving_Sugg) as `BR Insights per HCP`,
+	(a.Total_BRs_Prioritized)/(a.Reps_Receiving_Sugg) as `BR insights per Rep`,
+	(a.HCPs_Receiving_Sugg)/(b.HCPs_being_reached_either_by_call_or_VAE) as `%HCPs getting BR insights`,
+	(a.Reps_Receiving_Sugg)/(a0.Total_Reps) as `% Reps getting BR insights`
+from
+(
+	select 
+		p.salesforce_code as salesforce_code,
+		count(distinct p.customer_id) as HCPs_Receiving_Sugg, 
+		count(distinct p.rep_id) as Reps_Receiving_Sugg, 
+		count(distinct p.guid ) as Total_BRs_Prioritized  
+	from ppm p
+	where upper(p.salesforce_code) in ('ALZ_ADC')
+		and p.sugg_key in (select sugg_key from sugg_map)
+		and p.insight_type = 'BR'
+		and p.active_status='Y'
+	group by p.salesforce_code
+	order by p.salesforce_code
+ 
+) a
+ 
+full outer join
+ 
+(
+	select 
+		salesforce_id as salesforce_code,
+		count(distinct customer_id) as Total_HCPs, 
+		count(distinct rep_id) as Total_Reps
+	from rep_alignment
+	where upper(salesforce_id) in ('ALZ_ADC')
+	group by salesforce_id
+	order by salesforce_id
+ 
+) a0
+on upper(a.salesforce_code) = upper(a0.salesforce_code)
+ 
+left join
+ 
+(
+	select
+		salesforce_id,
+		count(distinct guid ) as Total_Sugg 
+	from pri_sugg
+	where upper(salesforce_id) in ('ALZ_ADC')
+		and metric_group_sk in (select distinct metric_sk from sugg_map)
+	group by salesforce_id
+	order by salesforce_id
+ 
+) a1
+on upper(a.salesforce_code) = upper(a1.salesforce_id)
+ 
+left join
+ 
+--------------------------------------------HCPs being reached (either by call or VAE)  
+ 
+(
+select salesforce_code ,count(distinct customer_id) as HCPs_being_reached_either_by_call_or_VAE 
+from ppm
+where active_status='Y'
+AND load_strategy =""ADD""
+and insight_type = 'PORTFOLIO'
+AND salesforce_code =""ALZ_ADC""
+group by salesforce_code
+order by salesforce_code
+ 
+) b
+on a.salesforce_code = b.salesforce_code
+ 
+left join
+-------------------------#reps having atleast one HCP with 0 BR-------------------------
+(
+	select  x.salesforce_code as salesforce_code, count(x.rep_id) as reps_atleast_one_HCP_with_0_BR
+	from
+		(
+		select rep_id, salesforce_code, count(distinct customer_id) as P_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'PORTFOLIO'
+                and insight_text like ""%Kisunla%""	
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)x
+		full outer join
+		(
+		select rep_id, salesforce_code, count(distinct customer_id ) as B_Count
+			from ppm
+			where active_status='Y'
+				and insight_type = 'BR'
+			group by rep_id, salesforce_code
+			order by rep_id, salesforce_code
+		)b
+		on x.rep_id = b.rep_id and x.salesforce_code = b.salesforce_code
+		where x.P_Count - b.B_Count > 0 
+		group by x.salesforce_code
+		order by x.salesforce_code
+) c
+on a.salesforce_code = c.salesforce_code
+ 
+left join
+-------------------------% HCPs Receiving only 1 BR -------------------------
+(
+	select aa.salesforce_code as salesforce_code, (bb.hcp_1_BR/aa.total_hcp) as perc_with_1_br  
+	from
+ 
+	(
+		select salesforce_code, count(distinct customer_id) as total_hcp
+		from ppm
+		where insight_type = 'PORTFOLIO'
+        and insight_text like ""%Kisunla%""
+			and active_status='Y'
+		group by salesforce_code
+		order by salesforce_code
+ 
+	) aa
+ 
+	full outer join
+ 
+	(
+		select salesforce_code, count(distinct customer_id) as hcp_1_BR
+		from 
+		(
+			select  customer_id, rep_id, salesforce_code, count (distinct guid) as insight_count
+			from ppm
+			where insight_type = 'BR'
+				and active_status='Y'
+			group by customer_id, rep_id, salesforce_code
+			having insight_count = 1
+		) x
+		group by x.salesforce_code
+	) bb
+ 
+	on aa.salesforce_code = bb.salesforce_code
+) d
+on a.salesforce_code = d.salesforce_code
+order by `sleeve name` asc;",NA,NA,Not Applicable
+ALZ_2,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+
+	distinct trim(m.sugg_name) as sugg_name,
+
+	m.suggestion_type,
+
+	nvl(a.ALZ_ADC_hcp_count_gen,0) as ALZ_ADC_hcp_count_gen,
+
+	nvl(a0.ALZ_ADC_HCP_COUNT_PO,0) as ALZ_ADC_HCP_COUNT_PO,
+
+	nvl(f.ALZ_ADC_HCP_COUNT_ppm,0) as ALZ_ADC_HCP_COUNT_ppm,
+
+    (((nvl(f.ALZ_ADC_HCP_COUNT_ppm, 0)) -(nvl(a.ALZ_ADC_hcp_count_gen, 0)))/(nvl(a.ALZ_ADC_hcp_count_gen, 0)))*100 as percentage_change
+ 
+from(
+
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+
+	from sugg_map 
+
+	where
+
+		UPPER(sugg_name) like '%ALZ_DT%' 
+
+) m
+ 
+--generated counts
+
+left join
+
+(
+
+select trim(m.sugg_name) as sugg_name,m.metric_sk,p.action_integration_key,p.salesforce_id,count(distinct p.entities.`values`[""customer""].id ) as ALZ_ADC_hcp_count_gen
+
+from SUGG_MAP m
+
+left join pri_sugg p on p.metric_group_sk=m.metric_sk and p.salesforce_id=m.salesforce_id
+
+where UPPER(p.salesforce_id)='ALZ_ADC' AND rep_id is not null
+
+group by trim(m.sugg_name),m.metric_sk,p.salesforce_id,p.action_integration_key
+
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+ 
+--PO_counts
+
+left join
+
+(
+
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ALZ_ADC_HCP_COUNT_PO
+
+from sugg_map m
+
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+
+where UPPER(p.salesforce_code)='ALZ_ADC'
+
+--and p.active_status='Y' 
+
+and p.expiry_date > p.generation_date
+
+group by trim(m.sugg_name),p.salesforce_code
+
+) a0 on trim(m.sugg_name)=trim(a0.sugg_name)
+ 
+--ppm_counts
+
+left join
+
+(
+
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ALZ_ADC_HCP_COUNT_ppm
+
+from sugg_map m
+
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+
+where UPPER(p.salesforce_code)='ALZ_ADC'
+
+and p.active_status='Y' and p.expiry_date > p.generation_date
+
+group by trim(m.sugg_name),p.salesforce_code
+
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+ 
+order by trim(sugg_name)",NA,NA,Not Applicable
+ALZ_3,Post,US_BR_AWB_PPM,s3://aws-a0188-use1-00-p-s3b-data-lake-lilly-0071a-pdb03/01_INPUT_FILES/FI_MASTER_FILES/POST_PROCESSING_MASTER/,ppm,|,csv,guid,Custom_Query,Daily,Active,NA,NA,NA,prerequisite condition,"select 
+	distinct trim(m.sugg_name) as sugg_name,
+	m.suggestion_type,
+	nvl(a.ALZ_ADC_hcp_count_prev,0) as ALZ_ADC_hcp_count_prev,
+	nvl(f.ALZ_ADC_HCP_COUNT_ppm,0) as ALZ_ADC_HCP_COUNT_ppm,
+    (((nvl(f.ALZ_ADC_HCP_COUNT_ppm, 0) )-(nvl(a.ALZ_ADC_hcp_count_prev, 0) )) /(nvl(a.ALZ_ADC_hcp_count_prev, 0) ))*100 as percentage_change
+ 
+from(
+	select distinct metric_sk,sugg_name,salesforce_id,suggestion_type 
+	from sugg_map 
+	where
+		UPPER(sugg_name) like '%ALZ_DT%' 
+) m
+ 
+--prev counts
+left join
+(
+select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ALZ_ADC_HCP_COUNT_prev
+from sugg_map m
+left join ppm_prev p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='ALZ_ADC'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) a on trim(m.sugg_name)=trim(a.sugg_name)
+ 
+--ppm_counts
+left join
+(
+	select trim(m.sugg_name) as sugg_name,p.salesforce_code,count(distinct customer_id ) as ALZ_ADC_HCP_COUNT_ppm
+from sugg_map m
+left join ppm p on p.sugg_key=m.sugg_key and UPPER(p.salesforce_code)=UPPER(m.salesforce_id)
+where UPPER(p.salesforce_code)='ALZ_ADC'
+and p.active_status='Y' and p.expiry_date > p.generation_date
+group by trim(m.sugg_name),p.salesforce_code
+) f on trim(m.sugg_name)=trim(f.sugg_name)
+ 
+order by trim(sugg_name)",NA,NA,Not Applicable

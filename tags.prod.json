@@ -1,0 +1,26 @@
+[
+    {
+        "Key": "DeployEnvironment",
+        "Value": "prod"
+    },
+    {
+        "Key": "AppName",
+        "Value": "buit-edb-dynamic-targeting"
+    },
+    {
+        "Key": "Level1BusinessArea",
+        "Value": "Business Units IDS"
+    },
+    {
+        "Key": "DataClassification",
+        "Value": "Yellow"
+    },
+    {
+        "Key": "Hipaa",
+        "Value": "No"
+    },
+    {
+        "Key": "SourceGitRepo",
+        "Value": "buit-edb-dynamic-targeting"
+    }
+]

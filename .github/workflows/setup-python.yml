@@ -1,0 +1,37 @@
+name: 'SetupPython'
+
+on:
+  workflow_call:
+
+jobs:
+  SetupPython:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout your GitHub Repo with application code in
+      - name: Checkout Current Repo
+        uses: actions/checkout@v3
+
+      # Setup python and pre-requisite libs
+      - name: setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+          cache: 'pip'
+
+      - uses: actions/cache@v3
+        id: pip
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-pip-${{ hashFiles('.github/requirements.txt') }}
+
+      - name: install dependencies
+        if: steps.pip.outputs.cache-hit != 'true'
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r ${GITHUB_WORKSPACE}/.github/requirements.txt
+
+      - uses: actions/cache@v3
+        if: steps.pip.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-pip-${{ hashFiles('.github/requirements.txt') }}

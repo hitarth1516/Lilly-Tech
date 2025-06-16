@@ -1,0 +1,76 @@
+# Who : Ryan Strandt
+# When: 01-09-2022
+#
+# Enterprise Actions: EDAT has authorized the usage of github actions and deployed enterprise available actions withing the `.github` repo of the EliLillyCo org.
+# These actions help perform the necessary MFA authentication and AWS authorization using temporary credentials for a federated service role
+# deployed in the AWS account desginated for deployment. [Refer to .github repo for more information](https://github.com/EliLillyCo/.github)
+#
+# Reusable Workflows: https://docs.github.com/en/actions/using-workflows/reusing-workflows#overview
+#
+# This Workflow will check your repo and branch cache for a key with the specified vending machine actions ref: vm-actions-${version}
+# If cache is not present, EDAT Enterprise Actions are checked out and cached locally
+#
+# Usage:
+#   This workflow is a reusable workflow and can be invoked as a job in another workflow:
+############ Example: #############
+#     env:
+#       vm-version: v1.4.0
+#
+#     jobs:
+#       VM:
+#         uses: ./.github/workflows/iris-vm.yml
+#         with:
+#           VM_VERSION: ${{env.vm-version}}
+#
+############
+# You can adjust the behavior by modifying this file.
+
+name: 'VM'
+
+env:
+  vm_cache_version: 2
+
+on:
+  workflow_call:
+    inputs:
+      VM_VERSION:
+        required: true
+        type: string
+        default: v2.0.0
+    outputs:
+      VM_CACHE_KEY:
+        description: 'VM Actions Cache key'
+        value: ${{ jobs.VendingMachineActions.outputs.VM_CACHE_KEY }}
+
+jobs:
+  VendingMachineActions:
+    runs-on: ubuntu-latest
+    outputs:
+      VM_CACHE_KEY: vm-actions-${{inputs.VM_VERSION}}-${{env.vm_cache_version}}
+    steps:
+      # Check branch cache for enterprisse-actions @${EA_VERSION}
+      - name: vm actions
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ./vm-actions
+          key: vm-actions-${{inputs.VM_VERSION}}-${{env.vm_cache_version}}
+
+      # Checkout Repository with Vending Machine GitHub Actions.
+      - name: Checkout Vending Machine
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: EliLillyCo/lusa-iris-aws-vending-machine
+          ref: ${{inputs.VM_VERSION}}
+          token: ${{ secrets.GITHUBREADONLY }}
+          persist-credentials: false
+          path: ./vm-actions
+
+      # Add branch cache for enterprisse-actions @${EA_VERSION} if not present
+      - name: Cache vm actions
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v3
+        with:
+          path: ./vm-actions
+          key: vm-actions-${{inputs.VM_VERSION}}-${{env.vm_cache_version}}

@@ -1,0 +1,33 @@
+name: Delete feature branch
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - develop
+      - qa
+      - stage
+      - main
+      - master
+    types:
+      - closed
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run if Pull Request is merged
+        run: |
+          if [ "${{ github.event.pull_request.merged }}" == "true" ] && [[ "dev develop stage qa main master" =~ "${{ github.head_ref }}" ]]; then
+            echo "The PR was merged from a non-feature branch"
+          elif [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+            echo "The PR was merged"
+            git push origin --delete "${{ github.head_ref }}"
+          else
+            echo "The PR was closed, but not merged"
+          fi
