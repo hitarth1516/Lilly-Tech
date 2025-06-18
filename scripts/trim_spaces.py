@@ -21,7 +21,7 @@ def trim_csv_spaces(file_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    directory = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG"
+    directory = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE"
     csv_files = glob.glob(os.path.join(directory, "**/*.csv"), recursive=True)
 
     if not csv_files:
