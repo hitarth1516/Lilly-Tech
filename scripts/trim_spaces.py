@@ -16,5 +16,5 @@ def trim_csv_spaces(file_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    file_path = "INPUT/03_METADATA_FILES/METRIC_CONFIG/metric_segment_asset/Metric_config_file.csv"
+    file_path = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_config_file.csv"
     trim_csv_spaces(file_path)
