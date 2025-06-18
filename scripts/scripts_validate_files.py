@@ -30,10 +30,6 @@ def is_valid_csv(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            # Check for control characters
-            if re.search(r'[\x00-\x1F\x7F]', content):
-                print(f"Error: Invalid control characters found in {file_path}")
-                return False
 
         # Use pandas to validate CSV structure
         df = pd.read_csv(file_path)
