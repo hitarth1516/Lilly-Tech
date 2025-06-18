@@ -6,9 +6,12 @@ import sys
 def trim_csv_spaces(file_path):
     """Trim leading and trailing spaces from CSV columns."""
     try:
-        df = pd.read_csv(file_path)
+        # Specify the delimiter as '|' to match the file format
+        df = pd.read_csv(file_path, sep='|')
+        # Trim spaces from object (string) columns
         df = df.apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-        df.to_csv(file_path, index=False)
+        # Write back to the same file
+        df.to_csv(file_path, sep='|', index=False)
         print(f"Successfully trimmed spaces in {file_path}")
     except FileNotFoundError:
         print(f"Error: File not found: {file_path}", file=sys.stderr)
@@ -18,7 +21,7 @@ def trim_csv_spaces(file_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    directory = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE"
+    directory = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG"
     csv_files = glob.glob(os.path.join(directory, "**/*.csv"), recursive=True)
 
     if not csv_files:
