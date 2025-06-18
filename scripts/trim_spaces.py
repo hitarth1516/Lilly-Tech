@@ -1,4 +1,6 @@
 import pandas as pd
+import glob
+import os
 import sys
 
 def trim_csv_spaces(file_path):
@@ -16,5 +18,12 @@ def trim_csv_spaces(file_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    file_path = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_config_file.csv"
-    trim_csv_spaces(file_path)
+    directory = "INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE"
+    csv_files = glob.glob(os.path.join(directory, "**/*.csv"), recursive=True)
+
+    if not csv_files:
+        print(f"Error: No CSV files found in {directory} or its subdirectories", file=sys.stderr)
+        sys.exit(1)
+
+    for file_path in csv_files:
+        trim_csv_spaces(file_path)
