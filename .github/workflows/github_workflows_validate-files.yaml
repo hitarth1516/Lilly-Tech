@@ -25,4 +25,12 @@ jobs:
 
       - name: Validate JSON and CSV files
         run: |
+<<<<<<< Test1
+          python scripts/validate_files.py
+
+      - name: Trim spaces in Metric_config_file.csv
+        run: |
+          python scripts/trim_spaces.py
+=======
           python scripts/scripts_validate_files.py
+>>>>>>> main
