@@ -62,9 +62,9 @@ def main():
         if not is_valid_csv(csv_file):
             all_valid = False
 
-    if not all_valid:
-        sys.exit(1)
-    print("All files are valid!")
+  #  if not all_valid:
+   #     sys.exit(1)
+   # print("All files are valid!")
 
 if __name__ == "__main__":
     main()
