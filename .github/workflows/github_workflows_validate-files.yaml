@@ -22,7 +22,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pandas
-
+      - name: List files
+        run: ls -R INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/
+        
       - name: Validate JSON and CSV files
         run: |
           python scripts/scripts_validate_files.py
