@@ -11,7 +11,7 @@ from datetime import datetime
 # Configure logging
 timestmp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = f'./validate_files_{timestmp}.log'
-logging.basicConfig(filename=log_filename, filemode='w', level=logging.INFO, level=logging.INFO)
+logging.basicConfig(filename=log_filename, filemode='w', level=logging.INFO)
 
 def is_valid_csv(file_path):
     """Validate CSV file for format and invalid characters."""
