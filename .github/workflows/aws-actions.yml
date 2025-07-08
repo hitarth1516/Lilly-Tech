@@ -36,7 +36,7 @@ jobs:
       - name: Set environment based on branch
         id: set-env
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/master" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads" || "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "environment=production" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/qa" ]]; then
             echo "environment=qa" >> $GITHUB_OUTPUT
@@ -97,7 +97,7 @@ jobs:
       # Set environment variables based on branch
       - name: Set env DEPLOYMENT_ENV, DEPLOYMENT_ROLE_ARN and S3_BUCKET
         run: |
-          if [[ $BRANCH == 'master' || $BRANCH == 'main' ]]; then
+          if [[ $BRANCH == 'master' ]]; then
             echo "DEPLOYMENT_ENV=prod" >> "$GITHUB_ENV"
             echo "DEPLOYMENT_ROLE_ARN=$PROD_DEPLOYMENT_ROLE" >> "$GITHUB_ENV"
             echo "S3_BUCKET=$PROD_S3_BUCKET" >> "$GITHUB_ENV"
