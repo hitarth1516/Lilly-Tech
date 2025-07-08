@@ -1,4 +1,4 @@
-QC_ID,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
+QC_IDD,Step_Execution,LOC,File_Dir,File_Name,Delimiter,File_Format,Column_Name,Check_Type,Frequency,Status,Lower_Threshold,Upper_Threshold,Criticality_Flag,Parameter1,Parameter2,Write_Mode,File_Append_Location,Exception_Statement
 1,Post,US_BR,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select dates from(
 select case when cnt=2 then 0 else cnt end as dates from(
 select count( distinct sugg_posted_date) as cnt from pri_sugg
@@ -32,16 +32,16 @@ having count(1) > 1) a",NA,NA,BR :  Duplicates at hcp-rep-prod and metric_group_
 4,Post,US_BR,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
 (
 select distinct metric_group_sk from pri_sugg 
-where (insights.insight_text[0] like '%�%' or action_text like '%�%') and metric_group_type='BusinessRule'
+where (insights.insight_text[0] like '%â%' or action_text like '%â%') and metric_group_type='BusinessRule'
 union all
 select distinct metric_group_sk from pri_sugg 
-where (insights.insight_text[0] like '%�%' or action_text like '%�%') and metric_group_type='BusinessRule'
+where (insights.insight_text[0] like '%Â%' or action_text like '%Â%') and metric_group_type='BusinessRule'
 union all
 select distinct metric_group_sk from pri_sugg 
-where (insights.insight_text[0] like '%�%' or action_text like '%�%') and metric_group_type='BusinessRule'
+where (insights.insight_text[0] like '%€%' or action_text like '%€%') and metric_group_type='BusinessRule'
 union all 
 select distinct metric_group_sk from pri_sugg 
-where (insights.insight_text[0] like '%�%' or action_text like '%�%') and metric_group_type='BusinessRule'
+where (insights.insight_text[0] like '%™%' or action_text like '%™%') and metric_group_type='BusinessRule'
 union all
 select distinct metric_group_sk 
 from pri_sugg where (trim(action_text) = '' or action_text is null or trim(insights.insight_text[0]) = '' or insights.insight_text[0] is null) and metric_group_type='BusinessRule'
@@ -457,10 +457,10 @@ and (entities.`values`['product'].external_id not in ('LEBRI')
  or business_unit_id not in ('US_PR' , 'US_BMBU_IMM'))
  )a",NA,NA,BR : Generated insights have mismatched product- sleeve mapping||Error resolution tip : check if pri_sugg file Product_ids are aligned to right Business Unit and right Salesforce_IDs.
 44,Post,US_BR,04_ARCHIVAL/date=current_date/BR/PRIORITIZED_SUGGESTIONS/,pri_sugg,|,parquet,guid,Custom_Count_Check,Daily,Active,NA,NA,NA,prerequisite condition,"select count(*) from 
-(select distinct metric_group_sk from src where insights.insight_text[0] like '%â€™%'
+(select distinct metric_group_sk from src where insights.insight_text[0] like '%Ã¢â‚¬â„¢%'
 and metric_group_sk not like 'PI_INSIGHT%'
 union all
-select distinct metric_group_sk from src where insights.insight_text[0] like '%Â%'
+select distinct metric_group_sk from src where insights.insight_text[0] like '%Ã‚%'
 and metric_group_sk not like 'PI_INSIGHT%'
 union all 
 select distinct metric_group_sk from src where insights.insight_text[0] like '%0.0%'
