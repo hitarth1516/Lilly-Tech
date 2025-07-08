@@ -308,8 +308,8 @@ def main():
     """Main function to validate specific CSV files and perform additional checks."""
     try:
         # Get file paths from environment variables
-        metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET /CONFIG_FILE/METRIC_CONFIG.File.csv')
-        master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET /CONFIG_FILE/MASTER_CONFIG.File.csv')
+        metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv')
+        master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
         output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
 
         # Initial validation of CSV files
