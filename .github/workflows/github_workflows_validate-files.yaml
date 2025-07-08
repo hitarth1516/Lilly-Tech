@@ -27,12 +27,12 @@ jobs:
         run: |
           python scripts/scripts_validate_files.py
         env:
-          METRIC_CONFIG_PATH: /work/METRIC_SEGMENT_ASSET/CONFIG_FILE/Metric_Config_File.csv
-          MASTER_CONFIG_PATH: /work/METRIC_SEGMENT_ASSET/CONFIG_FILE/Master_Config_File.csv
+          METRIC_CONFIG_PATH: /INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/Metric_Config_File.csv
+          MASTER_CONFIG_PATH: /INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/Master_Config_File.csv
           OUTPUT_PATH: /work/output/dqm_report.xlsx
 
       - name: Trim spaces in Metric_config_file.csv
         run: |
           python scripts/trim_spaces.py
         env:
-          METRIC_CONFIG_PATH: /work/METRIC_SEGMENT_ASSET /CONFIG_FILE/METRIC_CONFIG.File.csv
+          METRIC_CONFIG_PATH: /INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv
