@@ -2,7 +2,7 @@ name: Fetch Secrets from AWS Secrets Manager
 
 on:
   push:
-    branches: [develop, qa, main]
+    branches: [develop, qa]
 
 permissions:
   id-token: write # This is required for requesting the JWT
