@@ -312,8 +312,8 @@ def main():
         master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
         output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
         print('Paths you need')
-        print(metric_config_path)
-        print(master_config_path)
+        print(f"Metric Config exists: {os.path.exists(metric_config_path)}")
+        print(f"Master Config exists: {os.path.exists(master_config_path)}")
 
         # Initial validation of CSV files
         files_to_validate = {
