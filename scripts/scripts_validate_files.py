@@ -311,6 +311,9 @@ def main():
         metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv')
         master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
         output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
+        print('Paths you need')
+        print(metric_config_path)
+        print(master_config_path)
 
         # Initial validation of CSV files
         files_to_validate = {
