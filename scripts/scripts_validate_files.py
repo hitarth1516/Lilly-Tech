@@ -311,7 +311,19 @@ def main():
         metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv')
         master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
         output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
-
+        
+        for file_path, validator in files_to_validate.items():
+            if os.path.exists(file_path):
+                status = validator(file_path)
+                details = "Validation passed" if status else "Validation failed"
+                results['initial_validation'][file_path] = ("SUCCESS" if status else "FAILED", details)
+                if not status:
+                    all_valid = False
+            else:
+                print(f"Error: File not found: {file_path}")
+                logging.error(f"File not found: {file_path}")
+                results['initial_validation'][file_path] = ("FAILED", "File not found")
+                all_valid = False
         # Read data for additional validations
         print("reading metric_config_df")
         metric_config_df = pd.read_csv(metric_config_path, sep='|', quoting=csv.QUOTE_NONE)
