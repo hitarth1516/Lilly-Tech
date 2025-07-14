@@ -316,7 +316,7 @@ def main():
         print("reading metric_config_df")
         metric_config_df = pd.read_csv(metric_config_path, sep='|', quoting=csv.QUOTE_NONE)
         print("reading master_config_df")
-        master_config_df = pd.read_csv(master_config_path, sep=',', quoting=csv.QUOTE_NONE)
+        master_config_df = pd.read_csv(master_config_path, sep=',', quoting=csv.QUOTE_MINIMAL)
         env_data = {}  # Placeholder; adjust with actual env data source
 
         # Run additional validations
