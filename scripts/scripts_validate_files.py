@@ -18,7 +18,7 @@ def is_valid_csv(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-
+        
         # Use pandas to validate CSV structure with | delimiter
         df = pd.read_csv(file_path, sep='|', quoting=csv.QUOTE_NONE)
         if df.empty:
@@ -311,6 +311,11 @@ def main():
         metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv')
         master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
         output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
+
+        files_to_validate = {
+            metric_config_path,
+            master_config_path
+        }
         
         for file_path, validator in files_to_validate.items():
             if os.path.exists(file_path):
