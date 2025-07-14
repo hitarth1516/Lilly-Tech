@@ -313,8 +313,8 @@ def main():
         output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
 
         # Read data for additional validations
-        metric_config_df = pd.read_csv(metric_config_path, sep='|', quoting=csv.QUOTE_NONE)
-        master_config_df = pd.read_csv(master_config_path, sep='|', quoting=csv.QUOTE_NONE)
+        metric_config_df = pd.read_csv(metric_config_path, sep=',', quoting=csv.QUOTE_NONE)
+        master_config_df = pd.read_csv(master_config_path, sep=',', quoting=csv.QUOTE_NONE)
         env_data = {}  # Placeholder; adjust with actual env data source
 
         # Run additional validations
