@@ -314,8 +314,7 @@ def main():
 
         # Initial validation of CSV files
         files_to_validate = {
-            metric_config_path: is_valid_csv,
-            master_config_path: is_valid_csv
+            metric_config_path: is_valid_csv
         }
         results = {'initial_validation': {}}
         all_valid = True
