@@ -27,9 +27,9 @@ jobs:
         run: |
           python scripts/scripts_validate_files.py
         env:
-          # Corrected paths to be relative to the repository root
-          METRIC_CONFIG_PATH: METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv
-          MASTER_CONFIG_PATH: METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv
+          # Corrected paths to reflect the deeper nesting in the repository structure
+          METRIC_CONFIG_PATH: METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
+          MASTER_CONFIG_PATH: METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv
           OUTPUT_PATH: output/dqm_report.xlsx # Assuming 'output' will be created at repo root
 
       - name: Trim spaces in Metric_config_file.csv
@@ -37,5 +37,5 @@ jobs:
           python scripts/trim_spaces.py
         env:
           # Corrected path for trim_spaces.py as well
-          METRIC_CONFIG_PATH: METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv
+          METRIC_CONFIG_PATH: METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
 
