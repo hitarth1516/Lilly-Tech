@@ -23,28 +23,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas openpyxl pyyaml
 
-      - name: List files for debugging
+      - name: Run Validation Script
         run: |
-          echo "Listing current directory contents recursively:"
-          ls -R
-          echo "End of directory listing."
-
-      - name: Validate JSON and CSV files
-        run: |
+          # Now, scripts/scripts_validate_files.py handles the trimming internally
           python scripts/scripts_validate_files.py
         env:
-          # Corrected paths to reflect the deeper nesting in the repository structure
           METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
           MASTER_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv
-          # Updated OUTPUT_PATH to the new desired location
           OUTPUT_PATH: INPUT/DQM_REPORT/dqm_report.xlsx
-
-      - name: Trim spaces in Metric_config_file.csv
-        run: |
-          python scripts/trim_spaces.py
-        env:
-          # Corrected path for trim_spaces.py as well
-          METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
 
       - name: Upload DQM Report
         uses: actions/upload-artifact@v4
