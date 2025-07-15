@@ -13,14 +13,14 @@ timestmp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = f'./validate_files_{timestmp}.log'
 logging.basicConfig(filename=log_filename, filemode='w', level=logging.INFO)
 
-def is_valid_csv(file_path):
+# Modified is_valid_csv to accept sep and quoting parameters
+def is_valid_csv(file_path, sep, quoting):
     """Validate CSV file for format and invalid characters."""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        
-        # Use pandas to validate CSV structure with | delimiter
-        df = pd.read_csv(file_path, sep='|', quoting=csv.QUOTE_NONE)
+
+        df = pd.read_csv(file_path, sep=sep, quoting=quoting)
         if df.empty:
             print(f"Warning: Empty CSV file: {file_path}")
             logging.warning(f"Empty CSV file: {file_path}")
@@ -250,7 +250,7 @@ def validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_d
         if count == 0:
             status = 'FAILED'
             failure_df = pd.concat([failure_df, pd.DataFrame([{
-                'IdentifierValue': row['IdentifierValue'],
+                'IdentifierValue': row['Identifier_Value1'],
                 'TemplateString': row['TemplateString'] + '#'
             }])], ignore_index=True)
 
@@ -265,8 +265,8 @@ def flag_double_quote(master_config_df, metric_config_df):
     master_check_df = master_config_df
     metric_check_df = metric_config_df
 
-    mask1 = master_check_df.applymap(lambda x: isinstance(x, str) and ('""' in x or (x.startswith('"') or x.endswith('"'))))
-    mask2 = metric_check_df.applymap(lambda x: isinstance(x, str) and ('""' in x or (x.startswith('"') or x.endswith('"'))))
+    mask1 = master_check_df.apply(lambda col: col.astype(str).str.contains('""') | col.astype(str).str.startswith('"') | col.astype(str).str.endswith('"'))
+    mask2 = metric_check_df.apply(lambda col: col.astype(str).str.contains('""') | col.astype(str).str.startswith('"') | col.astype(str).str.endswith('"'))
 
     master_check_df['Flag'] = mask1.any(axis=1)
     metric_check_df['Flag'] = mask2.any(axis=1)
@@ -288,17 +288,33 @@ def flag_double_quote(master_config_df, metric_config_df):
 def generate_report(results, output_path):
     """Generate an Excel report with validation results."""
     wb = Workbook()
-    for sheet, (status, df) in results.items():
-        ws = wb.create_sheet(title=sheet) if sheet != 'Validation Report' else wb.active
-        ws.append(["File" if sheet == 'Validation Report' else "Check", "Status", "Details"])
-        if sheet == 'Validation Report':
-            for file_path, (status, details) in results.get('initial_validation', {}).items():
-                ws.append([os.path.basename(file_path), status, details])
+    # Remove the default sheet created by Workbook()
+    if 'Sheet' in wb.sheetnames:
+        wb.remove(wb['Sheet'])
+
+    # Add a summary sheet for initial file validation
+    ws_summary = wb.create_sheet(title="File Validation Summary")
+    ws_summary.append(["File", "Status", "Details"])
+    for file_path, (status, details) in results.get('initial_validation', {}).items():
+        ws_summary.append([os.path.basename(file_path), status, details])
+
+    # Add sheets for each additional validation check
+    for sheet_name, (status, df) in results.items():
+        if sheet_name == 'initial_validation': # Skip the initial validation as it's handled in summary
+            continue
+
+        ws = wb.create_sheet(title=sheet_name)
+        ws.append([f"{sheet_name} Status", status]) # Add overall status for the check
+
+        if not df.empty:
+            # Append column headers
+            ws.append(df.columns.tolist())
+            # Append data rows
+            for r_idx, row in df.iterrows():
+                ws.append(row.tolist())
         else:
-            ws.append([f"{sheet} Result", status, "See details below"])
-            if not df.empty:
-                for column in df.columns:
-                    ws.append([column] + df[column].tolist())
+            ws.append(["No issues found for this check."])
+
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     wb.save(output_path)
     logging.info(f"Validation report saved to {output_path}")
@@ -308,18 +324,23 @@ def main():
     """Main function to validate specific CSV files and perform additional checks."""
     try:
         # Get file paths from environment variables
-        metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv')
-        master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
-        output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
+        metric_config_path = os.environ.get('METRIC_CONFIG_PATH', 'INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv')
+        master_config_path = os.environ.get('MASTER_CONFIG_PATH', 'INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv')
+        output_path = os.environ.get('OUTPUT_PATH', 'output/dqm_report.xlsx')
 
-        files_to_validate = {
-            metric_config_path,
-            master_config_path
+        # Initial validation of CSV files
+        # Pass the correct separator and quoting for each file
+        files_to_validate_params = {
+            metric_config_path: {'sep': '|', 'quoting': csv.QUOTE_NONE}, # Assuming this is correct for metric config
+            master_config_path: {'sep': ',', 'quoting': csv.QUOTE_MINIMAL} # Corrected for master config
         }
-        
-        for file_path, validator in files_to_validate.items():
+        results = {'initial_validation': {}}
+        all_valid = True
+
+        for file_path, params in files_to_validate_params.items():
             if os.path.exists(file_path):
-                status = validator(file_path)
+                # Call is_valid_csv with specific sep and quoting parameters
+                status = is_valid_csv(file_path, params['sep'], params['quoting'])
                 details = "Validation passed" if status else "Validation failed"
                 results['initial_validation'][file_path] = ("SUCCESS" if status else "FAILED", details)
                 if not status:
@@ -329,27 +350,52 @@ def main():
                 logging.error(f"File not found: {file_path}")
                 results['initial_validation'][file_path] = ("FAILED", "File not found")
                 all_valid = False
+
         # Read data for additional validations
-        print("reading metric_config_df")
-        metric_config_df = pd.read_csv(metric_config_path, sep='|', quoting=csv.QUOTE_NONE)
-        print("reading master_config_df")
-        master_config_df = pd.read_csv(master_config_path, sep=',', quoting=csv.QUOTE_MINIMAL)
+        metric_config_df = pd.DataFrame()
+        master_config_df = pd.DataFrame()
+
+        if results['initial_validation'].get(metric_config_path, ('FAILED', ''))[0] == 'SUCCESS':
+            # Use the same parameters as used in validation
+            metric_config_df = pd.read_csv(metric_config_path,
+                                           sep=files_to_validate_params[metric_config_path]['sep'],
+                                           quoting=files_to_validate_params[metric_config_path]['quoting'])
+        else:
+            print(f"Skipping further validation: {metric_config_path} is invalid or not found.")
+            logging.warning(f"Skipping further validation: {metric_config_path} is invalid or not found.")
+            all_valid = False
+
+        if results['initial_validation'].get(master_config_path, ('FAILED', ''))[0] == 'SUCCESS':
+            # Use the same parameters as used in validation
+            master_config_df = pd.read_csv(master_config_path,
+                                           sep=files_to_validate_params[master_config_path]['sep'],
+                                           quoting=files_to_validate_params[master_config_path]['quoting'])
+        else:
+            print(f"Skipping further validation: {master_config_path} is invalid or not found.")
+            logging.warning(f"Skipping further validation: {master_config_path} is invalid or not found.")
+            all_valid = False
+
         env_data = {}  # Placeholder; adjust with actual env data source
 
-        # Run additional validations
-        results.update(check_duplicates(metric_config_df, master_config_df))
-        results.update(validate_master_files(master_config_df))
-        results.update(validate_table_names(master_config_df))
-        results.update(print_inactive_files(master_config_df))
-        results.update(print_inactive_metrics(master_config_df))
-        results.update(validate_sql_template_strings(master_config_df))
-        results.update(validate_quotes_in_sql(master_config_df))
-        results.update(validate_quotes_in_metric_config(metric_config_df))
-        results.update(validate_active_metrics(metric_config_df, env_data))
-        results.update(print_inactive_metrics_list(metric_config_df))
-        results.update(validate_activeinsights_metrics(master_config_df, metric_config_df, env_data))
-        results.update(validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_df))
-        results.update(flag_double_quote(master_config_df, metric_config_df))
+        # Run additional validations only if both config dataframes are not empty
+        if not metric_config_df.empty and not master_config_df.empty:
+            results.update(check_duplicates(metric_config_df, master_config_df))
+            results.update(validate_master_files(master_config_df))
+            results.update(validate_table_names(master_config_df))
+            results.update(print_inactive_files(master_config_df))
+            results.update(print_inactive_metrics(master_config_df))
+            results.update(validate_sql_template_strings(master_config_df))
+            results.update(validate_quotes_in_sql(master_config_df))
+            results.update(validate_quotes_in_metric_config(metric_config_df))
+            results.update(validate_active_metrics(metric_config_df, env_data))
+            results.update(print_inactive_metrics_list(metric_config_df))
+            results.update(validate_activeinsights_metrics(master_config_df, metric_config_df, env_data))
+            results.update(validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_df))
+            results.update(flag_double_quote(master_config_df, metric_config_df))
+        else:
+            print("Skipping additional validations due to missing or invalid configuration files.")
+            logging.warning("Skipping additional validations due to missing or invalid configuration files.")
+
 
         # Generate report
         generate_report(results, output_path)
@@ -367,3 +413,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
