@@ -13,7 +13,45 @@ timestmp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = f'./validate_files_{timestmp}.log'
 logging.basicConfig(filename=log_filename, filemode='w', level=logging.INFO)
 
-# Modified is_valid_csv to accept sep and quoting parameters
+# --- Start of integrated trim_spaces.py functionality ---
+
+def trim_csv_spaces(file_path, sep, quoting):
+    """
+    Reads a CSV file, trims spaces from all string columns,
+    and overwrites the original file.
+    Accepts delimiter (sep) and quoting style.
+    """
+    try:
+        if not os.path.exists(file_path):
+            logging.error(f"Error: File not found for trimming: {file_path}")
+            print(f"Error: File not found for trimming: {file_path}")
+            # Do not exit here, let the main validation handle file existence
+            return False
+
+        # Read the CSV file using provided delimiter and quoting
+        df = pd.read_csv(file_path, sep=sep, quoting=quoting)
+        logging.info(f"Successfully read CSV for trimming: {file_path}")
+
+        # Trim spaces from all string columns
+        for col in df.select_dtypes(include=['object']).columns:
+            # Ensure the column is treated as string before stripping
+            df[col] = df[col].astype(str).str.strip()
+        logging.info("Trimmed spaces from string columns.")
+
+        # Overwrite the original CSV file with trimmed data
+        df.to_csv(file_path, sep=sep, index=False, quoting=quoting)
+        logging.info(f"Successfully wrote trimmed data back to: {file_path}")
+        print(f"Successfully trimmed spaces in {file_path}")
+        return True
+
+    except Exception as e:
+        logging.error(f"Failed to trim spaces in {file_path}: {e}")
+        print(f"Failed to trim spaces in {file_path}: {e}")
+        return False
+
+# --- End of integrated trim_spaces.py functionality ---
+
+
 def is_valid_csv(file_path, sep, quoting):
     """Validate CSV file for format and invalid characters."""
     try:
@@ -342,50 +380,62 @@ def main():
         # Get file paths from environment variables
         metric_config_path = os.environ.get('METRIC_CONFIG_PATH', 'INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv')
         master_config_path = os.environ.get('MASTER_CONFIG_PATH', 'INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv')
-        output_path = os.environ.get('OUTPUT_PATH', 'output/dqm_report.xlsx')
+        output_path = os.environ.get('OUTPUT_PATH', 'INPUT/DQM_REPORT/dqm_report.xlsx')
 
-        # Initial validation of CSV files
-        # Pass the correct separator and quoting for each file
-        files_to_validate_params = {
-            metric_config_path: {'sep': '|', 'quoting': csv.QUOTE_NONE}, # Assuming this is correct for metric config
-            master_config_path: {'sep': ',', 'quoting': csv.QUOTE_MINIMAL} # Corrected for master config
+        # Define parameters for each file type
+        file_processing_params = {
+            metric_config_path: {'sep': '|', 'quoting': csv.QUOTE_NONE},
+            master_config_path: {'sep': ',', 'quoting': csv.QUOTE_MINIMAL}
         }
+
         results = {'initial_validation': {}}
         all_valid = True
 
-        for file_path, params in files_to_validate_params.items():
-            if os.path.exists(file_path):
-                # Call is_valid_csv with specific sep and quoting parameters
-                status = is_valid_csv(file_path, params['sep'], params['quoting'])
-                details = "Validation passed" if status else "Validation failed"
-                results['initial_validation'][file_path] = ("SUCCESS" if status else "FAILED", details)
-                if not status:
+        # --- Trim spaces before validation and reading ---
+        print("Starting trim spaces for metric config file...")
+        # Call trim_csv_spaces for metric_config_path using its specific parameters
+        trim_success = trim_csv_spaces(metric_config_path,
+                                       file_processing_params[metric_config_path]['sep'],
+                                       file_processing_params[metric_config_path]['quoting'])
+        if not trim_success:
+            print(f"Warning: Skipping further validation due to failure in trimming {metric_config_path}.")
+            logging.warning(f"Skipping further validation due to failure in trimming {metric_config_path}.")
+            all_valid = False # Mark overall as invalid if trimming fails
+
+        # --- Initial validation of CSV files ---
+        # Only proceed with initial validation if trimming was successful for metric_config_path
+        if all_valid:
+            for file_path, params in file_processing_params.items():
+                if os.path.exists(file_path):
+                    status = is_valid_csv(file_path, params['sep'], params['quoting'])
+                    details = "Validation passed" if status else "Validation failed"
+                    results['initial_validation'][file_path] = ("SUCCESS" if status else "FAILED", details)
+                    if not status:
+                        all_valid = False
+                else:
+                    print(f"Error: File not found: {file_path}")
+                    logging.error(f"File not found: {file_path}")
+                    results['initial_validation'][file_path] = ("FAILED", "File not found")
                     all_valid = False
-            else:
-                print(f"Error: File not found: {file_path}")
-                logging.error(f"File not found: {file_path}")
-                results['initial_validation'][file_path] = ("FAILED", "File not found")
-                all_valid = False
 
         # Read data for additional validations
         metric_config_df = pd.DataFrame()
         master_config_df = pd.DataFrame()
 
+        # Only read dataframes if initial validation passed for them
         if results['initial_validation'].get(metric_config_path, ('FAILED', ''))[0] == 'SUCCESS':
-            # Use the same parameters as used in validation
             metric_config_df = pd.read_csv(metric_config_path,
-                                           sep=files_to_validate_params[metric_config_path]['sep'],
-                                           quoting=files_to_validate_params[metric_config_path]['quoting'])
+                                           sep=file_processing_params[metric_config_path]['sep'],
+                                           quoting=file_processing_params[metric_config_path]['quoting'])
         else:
             print(f"Skipping further validation: {metric_config_path} is invalid or not found.")
             logging.warning(f"Skipping further validation: {metric_config_path} is invalid or not found.")
             all_valid = False
 
         if results['initial_validation'].get(master_config_path, ('FAILED', ''))[0] == 'SUCCESS':
-            # Use the same parameters as used in validation
             master_config_df = pd.read_csv(master_config_path,
-                                           sep=files_to_validate_params[master_config_path]['sep'],
-                                           quoting=files_to_validate_params[master_config_path]['quoting'])
+                                           sep=file_processing_params[master_config_path]['sep'],
+                                           quoting=file_processing_params[master_config_path]['quoting'])
         else:
             print(f"Skipping further validation: {master_config_path} is invalid or not found.")
             logging.warning(f"Skipping further validation: {master_config_path} is invalid or not found.")
@@ -429,4 +479,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
