@@ -83,15 +83,17 @@ def validate_master_files(master_config_df):
 
 def extract_table_names(sql_query):
     """Extract table names from SQL queries."""
+    # Ensure sql_query is treated as a string, handling potential non-string types (like floats for NaN)
     table_name_pattern = re.compile(r'\bFROM\s+(\w+)|\bJOIN\s+(\w+)', re.IGNORECASE)
-    matches = table_name_pattern.findall(sql_query)
+    matches = table_name_pattern.findall(str(sql_query)) # Convert to string here
     return list(set(name for match in matches for name in match if name))
 
 def validate_table_names(master_config_df):
     """Validate tables used in SQL queries."""
     status = 'SUCCESS'
     active_df = master_config_df.copy()
-    active_df['Extracted_Tables'] = active_df['Identifier_Value2'].apply(lambda x: extract_table_names(x) if pd.notnull(x) else [])
+    # Ensure 'Identifier_Value2' is treated as string before applying extract_table_names
+    active_df['Extracted_Tables'] = active_df['Identifier_Value2'].astype(str).apply(lambda x: extract_table_names(x) if pd.notnull(x) else [])
     extracted_tables = [t.lower() for sublist in active_df['Extracted_Tables'] for t in sublist if t.lower() != 'temp']
     unique_values = [v.lower() for v in master_config_df['File_Name'].dropna().unique()]
     missing_tables = [t for t in extracted_tables if t not in unique_values]
@@ -118,10 +120,14 @@ def validate_sql_template_strings(master_config_df):
     failure_df = pd.DataFrame(columns=['IdentifierValue', 'Number of Template Strings', 'Number of Dynamic Statements / Trigger Names'])
     for index, row in master_config_df.iterrows():
         if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG'):
+            # Ensure 'Identifier_Value2' and 'DynamicStatements' are strings
+            identifier_value2_str = str(row['Identifier_Value2']) if pd.notnull(row['Identifier_Value2']) else ''
+            dynamic_statements_str = str(row['DynamicStatements']) if pd.notnull(row['DynamicStatements']) else ''
+
             template_pattern = re.compile(r"#template_string_\d+")
-            unique_templates = set(template_pattern.findall(row['Identifier_Value2'] or ''))
+            unique_templates = set(template_pattern.findall(identifier_value2_str))
             num_templates = len(unique_templates)
-            num_statements = len([s for s in (row['DynamicStatements'] or '').split('||') if s.strip()]) if row['DynamicStatements'] else 0
+            num_statements = len([s for s in dynamic_statements_str.split('||') if s.strip()])
             if num_templates != num_statements:
                 status = 'FAILED'
                 failure_df = pd.concat([failure_df, pd.DataFrame([{
@@ -137,7 +143,9 @@ def validate_quotes_in_sql(master_config_df):
     failure_df = pd.DataFrame(columns=['IdentifierName', 'IdentifierValue'])
     for index, row in master_config_df.iterrows():
         if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG'):
-            if row['Identifier_Value2'] and (row['Identifier_Value2'].startswith('"') or row['Identifier_Value2'].endswith('"')):
+            # Ensure 'Identifier_Value2' is a string
+            identifier_value2_str = str(row['Identifier_Value2']) if pd.notnull(row['Identifier_Value2']) else ''
+            if identifier_value2_str and (identifier_value2_str.startswith('"') or identifier_value2_str.endswith('"')):
                 status = 'FAILED'
                 failure_df = pd.concat([failure_df, pd.DataFrame([{
                     'IdentifierName': row['Identifier_Name2'],
@@ -151,7 +159,9 @@ def validate_quotes_in_metric_config(metric_config_df):
     failure_df = pd.DataFrame(columns=['ParameterValue', 'ConfigType'])
     for index, row in metric_config_df.iterrows():
         if row['PARAMETER_TYPE'] == 'DYNAMIC_METRIC_ID':
-            if row['CONFIG_VALUE'] and (row['CONFIG_VALUE'].startswith('"') or row['CONFIG_VALUE'].endswith('"')):
+            # Ensure 'CONFIG_VALUE' is a string
+            config_value_str = str(row['CONFIG_VALUE']) if pd.notnull(row['CONFIG_VALUE']) else ''
+            if config_value_str and (config_value_str.startswith('"') or config_value_str.endswith('"')):
                 status = 'FAILED'
                 failure_df = pd.concat([failure_df, pd.DataFrame([{
                     'ParameterValue': row['PARAMETER_VALUE'],
@@ -180,11 +190,12 @@ def print_inactive_metrics_list(metric_config_df):
 def validate_activeinsights_metrics(master_config_df, metric_config_df, env_data):
     """Validate metrics in active insights (simplified)."""
     status1, status2 = 'SUCCESS', 'SUCCESS'
-    # Simplified logic; adjust based on actual rules_df and active_rules_extract_df
     active_master_df = pd.DataFrame()
     for index, row in master_config_df.iterrows():
-        if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG') and pd.notna(row['DynamicStatements']):
-            statements = row['DynamicStatements'].split('||')
+        # Ensure 'DynamicStatements' is a string before splitting
+        dynamic_statements_str = str(row['DynamicStatements']) if pd.notnull(row['DynamicStatements']) else ''
+        if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG') and dynamic_statements_str: # Check if string is not empty after conversion
+            statements = dynamic_statements_str.split('||')
             names = [s.split('#')[0] for s in statements]
             active_master_df = pd.concat([active_master_df, pd.DataFrame({
                 'Identifier_Value1': row['Identifier_Value1'],
@@ -211,10 +222,12 @@ def validate_activeinsights_metrics(master_config_df, metric_config_df, env_data
 
 def split_dynamic_statements_templateid(row):
     """Split dynamic statements to extract template IDs."""
+    # Ensure 'DynamicStatements' is a string before splitting
+    dynamic_statements_str = str(row['DynamicStatements']) if pd.notnull(row['DynamicStatements']) else ''
     split_df = pd.DataFrame(columns=['IdentifierValue', 'TemplateString'])
-    if pd.isna(row['DynamicStatements']):
+    if not dynamic_statements_str: # Check if string is empty after conversion
         return split_df
-    statements = row['DynamicStatements'].split('||')
+    statements = dynamic_statements_str.split('||')
     for part in statements:
         if '#template_id' in part:
             metric_name_match = re.search(r'(\w+)#', part)
@@ -245,7 +258,9 @@ def validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_d
         count = 0
         for index1, row1 in metric_config_validation_df.iterrows():
             if (row['IdentifierValue'] == row1['CONFIG_TYPE']) and (row['TemplateString'] + '#' == row1['PARAMETER_VALUE']):
-                if '"template_id"' in row1['CONFIG_VALUE']:
+                # Ensure 'CONFIG_VALUE' is a string
+                config_value_str = str(row1['CONFIG_VALUE']) if pd.notnull(row1['CONFIG_VALUE']) else ''
+                if '"template_id"' in config_value_str:
                     count += 1
         if count == 0:
             status = 'FAILED'
@@ -262,9 +277,10 @@ def flag_double_quote(master_config_df, metric_config_df):
     failure_df1 = pd.DataFrame(columns=['ID Number'])
     failure_df2 = pd.DataFrame(columns=['ROW DESCRIPTION NAME'])
 
-    master_check_df = master_config_df
-    metric_check_df = metric_config_df
+    master_check_df = master_config_df.copy() # Operate on a copy to avoid SettingWithCopyWarning
+    metric_check_df = metric_config_df.copy() # Operate on a copy to avoid SettingWithCopyWarning
 
+    # Apply string conversion before checking for quotes
     mask1 = master_check_df.apply(lambda col: col.astype(str).str.contains('""') | col.astype(str).str.startswith('"') | col.astype(str).str.endswith('"'))
     mask2 = metric_check_df.apply(lambda col: col.astype(str).str.contains('""') | col.astype(str).str.startswith('"') | col.astype(str).str.endswith('"'))
 
