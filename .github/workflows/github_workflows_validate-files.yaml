@@ -85,7 +85,8 @@ jobs:
         run: |
           SUMMARY=$(cat change_summary.txt | head -c 15000)
           SUMMARY_ESCAPED=$(echo "$SUMMARY" | sed 's/"/\\"/g')
-          PR_USER=${{ github.event.pull_request.user.login }} # Get the PR user's login
+          # Try using github.actor which is often more reliable for the initiator of the workflow
+          PR_USER=${{ github.actor }}
 
           echo "DEBUG: PR_USER is: $PR_USER" # Added for debugging
 
