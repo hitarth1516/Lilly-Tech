@@ -25,7 +25,6 @@ jobs:
 
       - name: Run Validation Script
         run: |
-          # Now, scripts/scripts_validate_files.py handles the trimming internally
           python scripts/scripts_validate_files.py
         env:
           METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
