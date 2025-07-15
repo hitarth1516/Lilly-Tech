@@ -13,14 +13,52 @@ timestmp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = f'./validate_files_{timestmp}.log'
 logging.basicConfig(filename=log_filename, filemode='w', level=logging.INFO)
 
-def is_valid_csv(file_path):
+# --- Start of integrated trim_spaces.py functionality ---
+
+def trim_csv_spaces(file_path, sep, quoting):
+    """
+    Reads a CSV file, trims spaces from all string columns,
+    and overwrites the original file.
+    Accepts delimiter (sep) and quoting style.
+    """
+    try:
+        if not os.path.exists(file_path):
+            logging.error(f"Error: File not found for trimming: {file_path}")
+            print(f"Error: File not found for trimming: {file_path}")
+            # Do not exit here, let the main validation handle file existence
+            return False
+
+        # Read the CSV file using provided delimiter and quoting
+        df = pd.read_csv(file_path, sep=sep, quoting=quoting)
+        logging.info(f"Successfully read CSV for trimming: {file_path}")
+
+        # Trim spaces from all string columns
+        for col in df.select_dtypes(include=['object']).columns:
+            # Ensure the column is treated as string before stripping
+            df[col] = df[col].astype(str).str.strip()
+        logging.info("Trimmed spaces from string columns.")
+
+        # Overwrite the original CSV file with trimmed data
+        df.to_csv(file_path, sep=sep, index=False, quoting=quoting)
+        logging.info(f"Successfully wrote trimmed data back to: {file_path}")
+        print(f"Successfully trimmed spaces in {file_path}")
+        return True
+
+    except Exception as e:
+        logging.error(f"Failed to trim spaces in {file_path}: {e}")
+        print(f"Failed to trim spaces in {file_path}: {e}")
+        return False
+
+# --- End of integrated trim_spaces.py functionality ---
+
+
+def is_valid_csv(file_path, sep, quoting):
     """Validate CSV file for format and invalid characters."""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Use pandas to validate CSV structure with | delimiter
-        df = pd.read_csv(file_path, sep='|', quoting=csv.QUOTE_NONE)
+        df = pd.read_csv(file_path, sep=sep, quoting=quoting)
         if df.empty:
             print(f"Warning: Empty CSV file: {file_path}")
             logging.warning(f"Empty CSV file: {file_path}")
@@ -83,15 +121,17 @@ def validate_master_files(master_config_df):
 
 def extract_table_names(sql_query):
     """Extract table names from SQL queries."""
+    # Ensure sql_query is treated as a string, handling potential non-string types (like floats for NaN)
     table_name_pattern = re.compile(r'\bFROM\s+(\w+)|\bJOIN\s+(\w+)', re.IGNORECASE)
-    matches = table_name_pattern.findall(sql_query)
+    matches = table_name_pattern.findall(str(sql_query)) # Convert to string here
     return list(set(name for match in matches for name in match if name))
 
 def validate_table_names(master_config_df):
     """Validate tables used in SQL queries."""
     status = 'SUCCESS'
     active_df = master_config_df.copy()
-    active_df['Extracted_Tables'] = active_df['Identifier_Value2'].apply(lambda x: extract_table_names(x) if pd.notnull(x) else [])
+    # Ensure 'Identifier_Value2' is treated as string before applying extract_table_names
+    active_df['Extracted_Tables'] = active_df['Identifier_Value2'].astype(str).apply(lambda x: extract_table_names(x) if pd.notnull(x) else [])
     extracted_tables = [t.lower() for sublist in active_df['Extracted_Tables'] for t in sublist if t.lower() != 'temp']
     unique_values = [v.lower() for v in master_config_df['File_Name'].dropna().unique()]
     missing_tables = [t for t in extracted_tables if t not in unique_values]
@@ -118,10 +158,14 @@ def validate_sql_template_strings(master_config_df):
     failure_df = pd.DataFrame(columns=['IdentifierValue', 'Number of Template Strings', 'Number of Dynamic Statements / Trigger Names'])
     for index, row in master_config_df.iterrows():
         if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG'):
+            # Ensure 'Identifier_Value2' and 'DynamicStatements' are strings
+            identifier_value2_str = str(row['Identifier_Value2']) if pd.notnull(row['Identifier_Value2']) else ''
+            dynamic_statements_str = str(row['DynamicStatements']) if pd.notnull(row['DynamicStatements']) else ''
+
             template_pattern = re.compile(r"#template_string_\d+")
-            unique_templates = set(template_pattern.findall(row['Identifier_Value2'] or ''))
+            unique_templates = set(template_pattern.findall(identifier_value2_str))
             num_templates = len(unique_templates)
-            num_statements = len([s for s in (row['DynamicStatements'] or '').split('||') if s.strip()]) if row['DynamicStatements'] else 0
+            num_statements = len([s for s in dynamic_statements_str.split('||') if s.strip()])
             if num_templates != num_statements:
                 status = 'FAILED'
                 failure_df = pd.concat([failure_df, pd.DataFrame([{
@@ -137,7 +181,9 @@ def validate_quotes_in_sql(master_config_df):
     failure_df = pd.DataFrame(columns=['IdentifierName', 'IdentifierValue'])
     for index, row in master_config_df.iterrows():
         if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG'):
-            if row['Identifier_Value2'] and (row['Identifier_Value2'].startswith('"') or row['Identifier_Value2'].endswith('"')):
+            # Ensure 'Identifier_Value2' is a string
+            identifier_value2_str = str(row['Identifier_Value2']) if pd.notnull(row['Identifier_Value2']) else ''
+            if identifier_value2_str and (identifier_value2_str.startswith('"') or identifier_value2_str.endswith('"')):
                 status = 'FAILED'
                 failure_df = pd.concat([failure_df, pd.DataFrame([{
                     'IdentifierName': row['Identifier_Name2'],
@@ -151,7 +197,9 @@ def validate_quotes_in_metric_config(metric_config_df):
     failure_df = pd.DataFrame(columns=['ParameterValue', 'ConfigType'])
     for index, row in metric_config_df.iterrows():
         if row['PARAMETER_TYPE'] == 'DYNAMIC_METRIC_ID':
-            if row['CONFIG_VALUE'] and (row['CONFIG_VALUE'].startswith('"') or row['CONFIG_VALUE'].endswith('"')):
+            # Ensure 'CONFIG_VALUE' is a string
+            config_value_str = str(row['CONFIG_VALUE']) if pd.notnull(row['CONFIG_VALUE']) else ''
+            if config_value_str and (config_value_str.startswith('"') or config_value_str.endswith('"')):
                 status = 'FAILED'
                 failure_df = pd.concat([failure_df, pd.DataFrame([{
                     'ParameterValue': row['PARAMETER_VALUE'],
@@ -180,11 +228,12 @@ def print_inactive_metrics_list(metric_config_df):
 def validate_activeinsights_metrics(master_config_df, metric_config_df, env_data):
     """Validate metrics in active insights (simplified)."""
     status1, status2 = 'SUCCESS', 'SUCCESS'
-    # Simplified logic; adjust based on actual rules_df and active_rules_extract_df
     active_master_df = pd.DataFrame()
     for index, row in master_config_df.iterrows():
-        if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG') and pd.notna(row['DynamicStatements']):
-            statements = row['DynamicStatements'].split('||')
+        # Ensure 'DynamicStatements' is a string before splitting
+        dynamic_statements_str = str(row['DynamicStatements']) if pd.notnull(row['DynamicStatements']) else ''
+        if row['Identifier_Name1'] in ('NPP', 'PP', 'SEG') and dynamic_statements_str: # Check if string is not empty after conversion
+            statements = dynamic_statements_str.split('||')
             names = [s.split('#')[0] for s in statements]
             active_master_df = pd.concat([active_master_df, pd.DataFrame({
                 'Identifier_Value1': row['Identifier_Value1'],
@@ -211,10 +260,12 @@ def validate_activeinsights_metrics(master_config_df, metric_config_df, env_data
 
 def split_dynamic_statements_templateid(row):
     """Split dynamic statements to extract template IDs."""
+    # Ensure 'DynamicStatements' is a string before splitting
+    dynamic_statements_str = str(row['DynamicStatements']) if pd.notnull(row['DynamicStatements']) else ''
     split_df = pd.DataFrame(columns=['IdentifierValue', 'TemplateString'])
-    if pd.isna(row['DynamicStatements']):
+    if not dynamic_statements_str: # Check if string is empty after conversion
         return split_df
-    statements = row['DynamicStatements'].split('||')
+    statements = dynamic_statements_str.split('||')
     for part in statements:
         if '#template_id' in part:
             metric_name_match = re.search(r'(\w+)#', part)
@@ -245,12 +296,14 @@ def validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_d
         count = 0
         for index1, row1 in metric_config_validation_df.iterrows():
             if (row['IdentifierValue'] == row1['CONFIG_TYPE']) and (row['TemplateString'] + '#' == row1['PARAMETER_VALUE']):
-                if '"template_id"' in row1['CONFIG_VALUE']:
+                # Ensure 'CONFIG_VALUE' is a string
+                config_value_str = str(row1['CONFIG_VALUE']) if pd.notnull(row1['CONFIG_VALUE']) else ''
+                if '"template_id"' in config_value_str:
                     count += 1
         if count == 0:
             status = 'FAILED'
             failure_df = pd.concat([failure_df, pd.DataFrame([{
-                'IdentifierValue': row['IdentifierValue'],
+                'IdentifierValue': row['Identifier_Value1'],
                 'TemplateString': row['TemplateString'] + '#'
             }])], ignore_index=True)
 
@@ -262,11 +315,12 @@ def flag_double_quote(master_config_df, metric_config_df):
     failure_df1 = pd.DataFrame(columns=['ID Number'])
     failure_df2 = pd.DataFrame(columns=['ROW DESCRIPTION NAME'])
 
-    master_check_df = master_config_df
-    metric_check_df = metric_config_df
+    master_check_df = master_config_df.copy() # Operate on a copy to avoid SettingWithCopyWarning
+    metric_check_df = metric_config_df.copy() # Operate on a copy to avoid SettingWithCopyWarning
 
-    mask1 = master_check_df.applymap(lambda x: isinstance(x, str) and ('""' in x or (x.startswith('"') or x.endswith('"'))))
-    mask2 = metric_check_df.applymap(lambda x: isinstance(x, str) and ('""' in x or (x.startswith('"') or x.endswith('"'))))
+    # Apply string conversion before checking for quotes
+    mask1 = master_check_df.apply(lambda col: col.astype(str).str.contains('""') | col.astype(str).str.startswith('"') | col.astype(str).str.endswith('"'))
+    mask2 = metric_check_df.apply(lambda col: col.astype(str).str.contains('""') | col.astype(str).str.startswith('"') | col.astype(str).str.endswith('"'))
 
     master_check_df['Flag'] = mask1.any(axis=1)
     metric_check_df['Flag'] = mask2.any(axis=1)
@@ -288,17 +342,33 @@ def flag_double_quote(master_config_df, metric_config_df):
 def generate_report(results, output_path):
     """Generate an Excel report with validation results."""
     wb = Workbook()
-    for sheet, (status, df) in results.items():
-        ws = wb.create_sheet(title=sheet) if sheet != 'Validation Report' else wb.active
-        ws.append(["File" if sheet == 'Validation Report' else "Check", "Status", "Details"])
-        if sheet == 'Validation Report':
-            for file_path, (status, details) in results.get('initial_validation', {}).items():
-                ws.append([os.path.basename(file_path), status, details])
+    # Remove the default sheet created by Workbook()
+    if 'Sheet' in wb.sheetnames:
+        wb.remove(wb['Sheet'])
+
+    # Add a summary sheet for initial file validation
+    ws_summary = wb.create_sheet(title="File Validation Summary")
+    ws_summary.append(["File", "Status", "Details"])
+    for file_path, (status, details) in results.get('initial_validation', {}).items():
+        ws_summary.append([os.path.basename(file_path), status, details])
+
+    # Add sheets for each additional validation check
+    for sheet_name, (status, df) in results.items():
+        if sheet_name == 'initial_validation': # Skip the initial validation as it's handled in summary
+            continue
+
+        ws = wb.create_sheet(title=sheet_name)
+        ws.append([f"{sheet_name} Status", status]) # Add overall status for the check
+
+        if not df.empty:
+            # Append column headers
+            ws.append(df.columns.tolist())
+            # Append data rows
+            for r_idx, row in df.iterrows():
+                ws.append(row.tolist())
         else:
-            ws.append([f"{sheet} Result", status, "See details below"])
-            if not df.empty:
-                for column in df.columns:
-                    ws.append([column] + df[column].tolist())
+            ws.append(["No issues found for this check."])
+
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     wb.save(output_path)
     logging.info(f"Validation report saved to {output_path}")
@@ -308,50 +378,90 @@ def main():
     """Main function to validate specific CSV files and perform additional checks."""
     try:
         # Get file paths from environment variables
-        metric_config_path = os.environ.get('METRIC_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG.File.csv')
-        master_config_path = os.environ.get('MASTER_CONFIG_PATH', '/work/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG.File.csv')
-        output_path = os.environ.get('OUTPUT_PATH', '/work/output/dqm_report.xlsx')
+        metric_config_path = os.environ.get('METRIC_CONFIG_PATH', 'INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv')
+        master_config_path = os.environ.get('MASTER_CONFIG_PATH', 'INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv')
+        output_path = os.environ.get('OUTPUT_PATH', 'INPUT/DQM_REPORT/dqm_report.xlsx')
 
-        # Initial validation of CSV files
-        files_to_validate = {
-            metric_config_path: is_valid_csv,
-            master_config_path: is_valid_csv
+        # Define parameters for each file type
+        file_processing_params = {
+            metric_config_path: {'sep': '|', 'quoting': csv.QUOTE_NONE},
+            master_config_path: {'sep': ',', 'quoting': csv.QUOTE_MINIMAL}
         }
+
         results = {'initial_validation': {}}
         all_valid = True
 
-        for file_path, validator in files_to_validate.items():
-            if os.path.exists(file_path):
-                status = validator(file_path)
-                details = "Validation passed" if status else "Validation failed"
-                results['initial_validation'][file_path] = ("SUCCESS" if status else "FAILED", details)
-                if not status:
+        # --- Trim spaces before validation and reading ---
+        print("Starting trim spaces for metric config file...")
+        # Call trim_csv_spaces for metric_config_path using its specific parameters
+        trim_success = trim_csv_spaces(metric_config_path,
+                                       file_processing_params[metric_config_path]['sep'],
+                                       file_processing_params[metric_config_path]['quoting'])
+        if not trim_success:
+            print(f"Warning: Skipping further validation due to failure in trimming {metric_config_path}.")
+            logging.warning(f"Skipping further validation due to failure in trimming {metric_config_path}.")
+            all_valid = False # Mark overall as invalid if trimming fails
+
+        # --- Initial validation of CSV files ---
+        # Only proceed with initial validation if trimming was successful for metric_config_path
+        if all_valid:
+            for file_path, params in file_processing_params.items():
+                if os.path.exists(file_path):
+                    status = is_valid_csv(file_path, params['sep'], params['quoting'])
+                    details = "Validation passed" if status else "Validation failed"
+                    results['initial_validation'][file_path] = ("SUCCESS" if status else "FAILED", details)
+                    if not status:
+                        all_valid = False
+                else:
+                    print(f"Error: File not found: {file_path}")
+                    logging.error(f"File not found: {file_path}")
+                    results['initial_validation'][file_path] = ("FAILED", "File not found")
                     all_valid = False
-            else:
-                print(f"Error: File not found: {file_path}")
-                logging.error(f"File not found: {file_path}")
-                results['initial_validation'][file_path] = ("FAILED", "File not found")
-                all_valid = False
 
         # Read data for additional validations
-        metric_config_df = pd.read_csv(metric_config_path, sep='|', quoting=csv.QUOTE_NONE)
-        master_config_df = pd.read_csv(master_config_path, sep='|', quoting=csv.QUOTE_NONE)
+        metric_config_df = pd.DataFrame()
+        master_config_df = pd.DataFrame()
+
+        # Only read dataframes if initial validation passed for them
+        if results['initial_validation'].get(metric_config_path, ('FAILED', ''))[0] == 'SUCCESS':
+            metric_config_df = pd.read_csv(metric_config_path,
+                                           sep=file_processing_params[metric_config_path]['sep'],
+                                           quoting=file_processing_params[metric_config_path]['quoting'])
+        else:
+            print(f"Skipping further validation: {metric_config_path} is invalid or not found.")
+            logging.warning(f"Skipping further validation: {metric_config_path} is invalid or not found.")
+            all_valid = False
+
+        if results['initial_validation'].get(master_config_path, ('FAILED', ''))[0] == 'SUCCESS':
+            master_config_df = pd.read_csv(master_config_path,
+                                           sep=file_processing_params[master_config_path]['sep'],
+                                           quoting=file_processing_params[master_config_path]['quoting'])
+        else:
+            print(f"Skipping further validation: {master_config_path} is invalid or not found.")
+            logging.warning(f"Skipping further validation: {master_config_path} is invalid or not found.")
+            all_valid = False
+
         env_data = {}  # Placeholder; adjust with actual env data source
 
-        # Run additional validations
-        results.update(check_duplicates(metric_config_df, master_config_df))
-        results.update(validate_master_files(master_config_df))
-        results.update(validate_table_names(master_config_df))
-        results.update(print_inactive_files(master_config_df))
-        results.update(print_inactive_metrics(master_config_df))
-        results.update(validate_sql_template_strings(master_config_df))
-        results.update(validate_quotes_in_sql(master_config_df))
-        results.update(validate_quotes_in_metric_config(metric_config_df))
-        results.update(validate_active_metrics(metric_config_df, env_data))
-        results.update(print_inactive_metrics_list(metric_config_df))
-        results.update(validate_activeinsights_metrics(master_config_df, metric_config_df, env_data))
-        results.update(validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_df))
-        results.update(flag_double_quote(master_config_df, metric_config_df))
+        # Run additional validations only if both config dataframes are not empty
+        if not metric_config_df.empty and not master_config_df.empty:
+            results.update(check_duplicates(metric_config_df, master_config_df))
+            results.update(validate_master_files(master_config_df))
+            results.update(validate_table_names(master_config_df))
+            results.update(print_inactive_files(master_config_df))
+            results.update(print_inactive_metrics(master_config_df))
+            results.update(validate_sql_template_strings(master_config_df))
+            results.update(validate_quotes_in_sql(master_config_df))
+            results.update(validate_quotes_in_metric_config(metric_config_df))
+            results.update(validate_active_metrics(metric_config_df, env_data))
+            results.update(print_inactive_metrics_list(metric_config_df))
+            results.update(validate_activeinsights_metrics(master_config_df, metric_config_df, env_data))
+            results.update(validate_dynamic_statements_vaetemplateids(master_config_df, metric_config_df))
+            results.update(flag_double_quote(master_config_df, metric_config_df))
+        else:
+            print("Skipping additional validations due to missing or invalid configuration files.")
+            logging.warning("Skipping additional validations due to missing or invalid configuration files.")
+
 
         # Generate report
         generate_report(results, output_path)
@@ -369,3 +479,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
