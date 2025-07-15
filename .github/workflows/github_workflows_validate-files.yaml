@@ -46,3 +46,10 @@ jobs:
           # Corrected path for trim_spaces.py as well
           METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
 
+      - name: Upload DQM Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dqm-report
+          path: INPUT/DQM_REPORT/dqm_report.xlsx
+          retention-days: 5 # Optional: How long to keep the artifact (default is 90 days)
+
