@@ -23,14 +23,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas openpyxl pyyaml
 
+      - name: List files for debugging
+        run: |
+          echo "Listing current directory contents recursively:"
+          ls -R
+          echo "End of directory listing."
+
       - name: Validate JSON and CSV files
         run: |
           python scripts/scripts_validate_files.py
         env:
-          # Corrected paths based on the 'ls -R' output
+          # Corrected paths to reflect the deeper nesting in the repository structure
           METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
           MASTER_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv
-          OUTPUT_PATH: output/dqm_report.xlsx # Assuming 'output' will be created at repo root
+          # Updated OUTPUT_PATH to the new desired location
+          OUTPUT_PATH: INPUT/DQM_REPORT/dqm_report.xlsx
 
       - name: Trim spaces in Metric_config_file.csv
         run: |
