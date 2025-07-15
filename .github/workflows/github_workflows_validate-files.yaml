@@ -87,6 +87,8 @@ jobs:
           SUMMARY_ESCAPED=$(echo "$SUMMARY" | sed 's/"/\\"/g')
           PR_USER=${{ github.event.pull_request.user.login }} # Get the PR user's login
 
+          echo "DEBUG: PR_USER is: $PR_USER" # Added for debugging
+
           curl -H 'Content-Type: application/json' -d "{
             \"text\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\n\n$SUMMARY_ESCAPED\"
           }" $TEAMS_WEBHOOK_URL
