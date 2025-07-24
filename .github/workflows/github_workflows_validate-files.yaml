@@ -35,43 +35,27 @@ jobs:
         with:
           name: dqm-report
           path: INPUT/DQM_REPORT/dqm_report.xlsx
-          retention-days: 5
+          retention-days: 5 # Optional: How long to keep the artifact (default is 90 days)
 
-  summary-to-teams:
+  summary-to-teams: # New job added
     runs-on: ubuntu-latest
-    needs: validate-files
 
     steps:
       - name: Checkout PR Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure full history is fetched
-          token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly use the GitHub token
-
-      - name: Debug Directory Contents
-        run: |
-          echo "Listing contents of current directory:"
-          ls -la .
-          if [ -f ./dqm-report/dqm_report.xlsx ]; then
-            echo "dqm_report.xlsx found."
-          else
-            echo "dqm_report.xlsx NOT found."
-          fi
+          fetch-depth: 0
 
       - name: Generate Change Summary
         run: |
-          echo "Debug: Current branch and remote info"
-          git branch
-          git remote -v
-          # Explicitly fetch the base ref
-          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
-          echo "Fetch completed. Generating change summary..."
+          git fetch origin ${{ github.event.pull_request.base.ref }}
 
           echo "### PR Change Summary (File, Line, Description)\n" > change_summary.txt
 
           for file in $(git diff --name-only origin/${{ github.event.pull_request.base.ref }}); do
             echo -e "\n---\n**File:** $file" >> change_summary.txt
 
+            # Get the diff for the file
             git diff -U0 origin/${{ github.event.pull_request.base.ref }} -- "$file" | \
             awk '
               /^@@/ {
@@ -92,56 +76,17 @@ jobs:
           echo "Generated Change Summary:"
           cat change_summary.txt
 
-      - name: Convert DQM Report to Base64
-        run: |
-          if [ -f ./dqm-report/dqm_report.xlsx ]; then
-            base64 ./dqm-report/dqm_report.xlsx > dqm_report.b64
-            mkdir -p base64-artifacts
-            mv dqm_report.b64 base64-artifacts/dqm_report.b64
-            echo "BASE64_ARTIFACT_PATH=base64-artifacts/dqm_report.b64" >> $GITHUB_ENV
-          else
-            echo "Error: dqm_report.xlsx not found in ./dqm-report/"
-            exit 1
-          fi
-
-      - name: Upload Base64 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dqm-report-base64
-          path: base64-artifacts/
-
-      - name: Send Summary to Teams
+      - name: Send Summary to Teams 
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
         run: |
           SUMMARY=$(cat change_summary.txt | head -c 15000)
           SUMMARY_ESCAPED=$(echo "$SUMMARY" | sed 's/"/\\"/g')
+          # Try using github.actor which is often more reliable for the initiator of the workflow
           PR_USER=${{ github.actor }}
 
-          echo "DEBUG: PR_USER is: $PR_USER"
-
-          # Placeholder URL for the artifact; adjust based on actual artifact URL from GitHub Actions
-          DQM_REPORT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/dqm-report-base64"
+          echo "DEBUG: PR_USER is: $PR_USER" # Added for debugging
 
           curl -H 'Content-Type: application/json' -d "{
-            \"@type\": \"MessageCard\",
-            \"@context\": \"http://schema.org/extensions\",
-            \"summary\": \"PR Change Summary\",
-            \"title\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\",
-            \"text\": \"$SUMMARY_ESCAPED\",
-            \"sections\": [{
-              \"activityTitle\": \"DQM Report Attachment\",
-              \"facts\": [{
-                \"name\": \"File:\",
-                \"value\": \"dqm_report.xlsx\"
-              }]
-            }],
-            \"potentialAction\": [{
-              \"@type\": \"OpenUri\",
-              \"name\": \"Download DQM Report\",
-              \"targets\": [{
-                \"os\": \"default\",
-                \"uri\": \"$DQM_REPORT_URL\"
-              }]
-            }]
+            \"text\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\n\n$SUMMARY_ESCAPED\"
           }" $TEAMS_WEBHOOK_URL
