@@ -1,10 +1,8 @@
-name: Validate JSON and CSV Files
-
 on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened] # Added types for the new job trigger
+    types: [opened, synchronize, reopened]
 
 jobs:
   validate-files:
@@ -26,7 +24,6 @@ jobs:
 
       - name: Run Validation Script
         run: |
-          # Now, scripts/scripts_validate_files.py handles the trimming internally
           python scripts/scripts_validate_files.py
         env:
           METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
@@ -79,7 +76,7 @@ jobs:
           echo "Generated Change Summary:"
           cat change_summary.txt
 
-      - name: Send Summary to Teams # Uncommented for demonstration. Comment out if not desired for every run.
+      - name: Send Summary to Teams 
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
         run: |
@@ -93,4 +90,3 @@ jobs:
           curl -H 'Content-Type: application/json' -d "{
             \"text\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\n\n$SUMMARY_ESCAPED\"
           }" $TEAMS_WEBHOOK_URL
-
