@@ -45,28 +45,27 @@ jobs:
       - name: Checkout PR Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Download DQM Report
-        uses: actions/download-artifact@v4
-        with:
-          name: dqm-report
-          path: ./dqm-report/
+          fetch-depth: 0  # Ensure full history is fetched
+          token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly use the GitHub token
 
       - name: Debug Directory Contents
         run: |
-          echo "Listing contents of ./dqm-report/:"
-          ls -la ./dqm-report/
+          echo "Listing contents of current directory:"
+          ls -la .
           if [ -f ./dqm-report/dqm_report.xlsx ]; then
             echo "dqm_report.xlsx found."
           else
             echo "dqm_report.xlsx NOT found."
-            exit 1
           fi
 
       - name: Generate Change Summary
         run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
+          echo "Debug: Current branch and remote info"
+          git branch
+          git remote -v
+          # Explicitly fetch the base ref
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+          echo "Fetch completed. Generating change summary..."
 
           echo "### PR Change Summary (File, Line, Description)\n" > change_summary.txt
 
@@ -78,4 +77,71 @@ jobs:
               /^@@/ {
                 split($0, a, " ")
                 split(a[3], b, ",")
-                lineNum =
+                lineNum = b[1]
+              }
+              /^\+/ && !/^+++/{
+                print "- Line: " lineNum " | Added: " substr($0, 2, 50)
+                lineNum++
+              }
+              /^\-/ && !/^---/{
+                print "- Line: " lineNum " | Removed: " substr($0, 2, 50)
+              }
+            ' >> change_summary.txt
+          done
+
+          echo "Generated Change Summary:"
+          cat change_summary.txt
+
+      - name: Convert DQM Report to Base64
+        run: |
+          if [ -f ./dqm-report/dqm_report.xlsx ]; then
+            base64 ./dqm-report/dqm_report.xlsx > dqm_report.b64
+            mkdir -p base64-artifacts
+            mv dqm_report.b64 base64-artifacts/dqm_report.b64
+            echo "BASE64_ARTIFACT_PATH=base64-artifacts/dqm_report.b64" >> $GITHUB_ENV
+          else
+            echo "Error: dqm_report.xlsx not found in ./dqm-report/"
+            exit 1
+          fi
+
+      - name: Upload Base64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dqm-report-base64
+          path: base64-artifacts/
+
+      - name: Send Summary to Teams
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          SUMMARY=$(cat change_summary.txt | head -c 15000)
+          SUMMARY_ESCAPED=$(echo "$SUMMARY" | sed 's/"/\\"/g')
+          PR_USER=${{ github.actor }}
+
+          echo "DEBUG: PR_USER is: $PR_USER"
+
+          # Placeholder URL for the artifact; adjust based on actual artifact URL from GitHub Actions
+          DQM_REPORT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/dqm-report-base64"
+
+          curl -H 'Content-Type: application/json' -d "{
+            \"@type\": \"MessageCard\",
+            \"@context\": \"http://schema.org/extensions\",
+            \"summary\": \"PR Change Summary\",
+            \"title\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\",
+            \"text\": \"$SUMMARY_ESCAPED\",
+            \"sections\": [{
+              \"activityTitle\": \"DQM Report Attachment\",
+              \"facts\": [{
+                \"name\": \"File:\",
+                \"value\": \"dqm_report.xlsx\"
+              }]
+            }],
+            \"potentialAction\": [{
+              \"@type\": \"OpenUri\",
+              \"name\": \"Download DQM Report\",
+              \"targets\": [{
+                \"os\": \"default\",
+                \"uri\": \"$DQM_REPORT_URL\"
+              }]
+            }]
+          }" $TEAMS_WEBHOOK_URL
