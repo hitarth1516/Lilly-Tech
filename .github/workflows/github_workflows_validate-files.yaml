@@ -1,45 +1,6 @@
-on:
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
-
-jobs:
-  validate-files:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas openpyxl pyyaml
-
-      - name: Run Validation Script
-        run: |
-          python scripts/scripts_validate_files.py
-        env:
-          METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
-          MASTER_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/MASTER_CONFIG/Master_Config_File.csv
-          OUTPUT_PATH: INPUT/DQM_REPORT/dqm_report.xlsx
-
-      - name: Upload DQM Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dqm-report
-          path: INPUT/DQM_REPORT/dqm_report.xlsx
-          retention-days: 5
-
   summary-to-teams:
     runs-on: ubuntu-latest
-    needs: validate-files # Add dependency on validate-files job
+    needs: validate-files
 
     steps:
       - name: Checkout PR Code
@@ -53,6 +14,17 @@ jobs:
           name: dqm-report
           path: ./dqm-report/
 
+      - name: Debug Directory Contents
+        run: |
+          echo "Listing contents of ./dqm-report/:"
+          ls -la ./dqm-report/
+          if [ -f ./dqm-report/dqm_report.xlsx ]; then
+            echo "dqm_report.xlsx found."
+          else
+            echo "dqm_report.xlsx NOT found."
+            exit 1
+          fi
+
       - name: Generate Change Summary
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
@@ -62,7 +34,6 @@ jobs:
           for file in $(git diff --name-only origin/${{ github.event.pull_request.base.ref }}); do
             echo -e "\n---\n**File:** $file" >> change_summary.txt
 
-            # Get the diff for the file
             git diff -U0 origin/${{ github.event.pull_request.base.ref }} -- "$file" | \
             awk '
               /^@@/ {
@@ -85,8 +56,13 @@ jobs:
 
       - name: Convert DQM Report to Base64
         run: |
-          base64 ./dqm-report/dqm_report.xlsx > dqm_report.b64
-          echo "DQM_REPORT_BASE64=$(cat dqm_report.b64)" >> $GITHUB_ENV
+          if [ -f ./dqm-report/dqm_report.xlsx ]; then
+            base64 ./dqm-report/dqm_report.xlsx > dqm_report.b64
+            echo "DQM_REPORT_BASE64=$(cat dqm_report.b64)" >> $GITHUB_ENV
+          else
+            echo "Error: dqm_report.xlsx not found in ./dqm-report/"
+            exit 1
+          fi
 
       - name: Send Summary to Teams
         env:
