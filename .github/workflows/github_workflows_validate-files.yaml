@@ -93,17 +93,21 @@ jobs:
           echo "Generated Change Summary:"
           cat change_summary.txt
 
-      - name: Convert DQM Report to Base64
+      - name: Convert DQM Report to Base64 and Upload
         run: |
           if [ -f ./dqm-report/dqm_report.xlsx ]; then
-            # Convert to base64 and handle large files by reading in chunks
             base64 ./dqm-report/dqm_report.xlsx > dqm_report.b64
-            DQM_REPORT_BASE64=$(cat dqm_report.b64)
-            if [ ${#DQM_REPORT_BASE64} -gt 100000 ]; then
-              echo "Warning: Base64 string is large. Consider splitting for Teams compatibility."
-            fi
-            echo "DQM_REPORT_BASE64=$DQM_REPORT_BASE64" >> $GITHUB_ENV
-            rm dqm_report.b64
+            # Upload the base64 file as an artifact
+            mkdir -p base64-artifacts
+            mv dqm_report.b64 base64-artifacts/dqm_report.b64
+            echo "BASE64_ARTIFACT_PATH=base64-artifacts/dqm_report.b64" >> $GITHUB_ENV
+            echo "DQM_REPORT_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/dqm-report-base64" >> $GITHUB_ENV
+            echo "Uploading base64 artifact..."
+            ls -la base64-artifacts/
+            upload-artifact@v4
+            with:
+              name: dqm-report-base64
+              path: base64-artifacts/
           else
             echo "Error: dqm_report.xlsx not found in ./dqm-report/"
             exit 1
@@ -137,7 +141,7 @@ jobs:
               \"name\": \"Download DQM Report\",
               \"targets\": [{
                 \"os\": \"default\",
-                \"uri\": \"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${{ env.DQM_REPORT_BASE64 }}\"
+                \"uri\": \"${{ env.DQM_REPORT_URL }}\"
               }]
             }]
           }" $TEAMS_WEBHOOK_URL
