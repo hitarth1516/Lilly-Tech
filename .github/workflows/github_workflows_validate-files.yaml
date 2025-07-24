@@ -1,10 +1,8 @@
-name: Validate JSON and CSV Files
-
 on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened] # Added types for the new job trigger
+    types: [opened, synchronize, reopened]
 
 jobs:
   validate-files:
@@ -26,7 +24,6 @@ jobs:
 
       - name: Run Validation Script
         run: |
-          # Now, scripts/scripts_validate_files.py handles the trimming internally
           python scripts/scripts_validate_files.py
         env:
           METRIC_CONFIG_PATH: INPUT/03_METADATA_FILES/METRIC_SEGMENT_ASSET/CONFIG_FILE/METRIC_CONFIG/Metric_Config_File.csv
@@ -38,16 +35,23 @@ jobs:
         with:
           name: dqm-report
           path: INPUT/DQM_REPORT/dqm_report.xlsx
-          retention-days: 5 # Optional: How long to keep the artifact (default is 90 days)
+          retention-days: 5
 
-  summary-to-teams: # New job added
+  summary-to-teams:
     runs-on: ubuntu-latest
+    needs: validate-files # Add dependency on validate-files job
 
     steps:
       - name: Checkout PR Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Download DQM Report
+        uses: actions/download-artifact@v4
+        with:
+          name: dqm-report
+          path: ./dqm-report/
 
       - name: Generate Change Summary
         run: |
@@ -79,18 +83,40 @@ jobs:
           echo "Generated Change Summary:"
           cat change_summary.txt
 
-      - name: Send Summary to Teams # Uncommented for demonstration. Comment out if not desired for every run.
+      - name: Convert DQM Report to Base64
+        run: |
+          base64 ./dqm-report/dqm_report.xlsx > dqm_report.b64
+          echo "DQM_REPORT_BASE64=$(cat dqm_report.b64)" >> $GITHUB_ENV
+
+      - name: Send Summary to Teams
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
         run: |
           SUMMARY=$(cat change_summary.txt | head -c 15000)
           SUMMARY_ESCAPED=$(echo "$SUMMARY" | sed 's/"/\\"/g')
-          # Try using github.actor which is often more reliable for the initiator of the workflow
           PR_USER=${{ github.actor }}
 
-          echo "DEBUG: PR_USER is: $PR_USER" # Added for debugging
+          echo "DEBUG: PR_USER is: $PR_USER"
 
           curl -H 'Content-Type: application/json' -d "{
-            \"text\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\n\n$SUMMARY_ESCAPED\"
+            \"@type\": \"MessageCard\",
+            \"@context\": \"http://schema.org/extensions\",
+            \"summary\": \"PR Change Summary\",
+            \"title\": \"PR Change Summary - PR #${{ github.event.pull_request.number }} by $PR_USER\",
+            \"text\": \"$SUMMARY_ESCAPED\",
+            \"sections\": [{
+              \"activityTitle\": \"DQM Report Attachment\",
+              \"facts\": [{
+                \"name\": \"File:\",
+                \"value\": \"dqm_report.xlsx\"
+              }]
+            }],
+            \"potentialAction\": [{
+              \"@type\": \"OpenUri\",
+              \"name\": \"Download DQM Report\",
+              \"targets\": [{
+                \"os\": \"default\",
+                \"uri\": \"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${{ env.DQM_REPORT_BASE64 }}\"
+              }]
+            }]
           }" $TEAMS_WEBHOOK_URL
-
